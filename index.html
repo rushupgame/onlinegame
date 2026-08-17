@@ -1,0 +1,2324 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rush'Up! Live - Salon vidéo</title>
+<style>
+    :root {
+        --bg: #0f172a;
+        --bg-alt: #1e1b4b;
+        --card-border: rgba(255,255,255,0.12);
+        --primary: #ff4757;
+        --primary-hover: #ff6b81;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --text-main: #f8fafc;
+        --text-muted: #94a3b8;
+        --radius: 16px;
+        --radius-sm: 10px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+        margin: 0;
+        min-height: 100vh;
+        background: linear-gradient(160deg, var(--bg), var(--bg-alt));
+        color: var(--text-main);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px 16px 60px;
+    }
+
+    h1 {
+        font-size: 1.6rem;
+        font-weight: 900;
+        background: linear-gradient(90deg, var(--primary), var(--warning));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        margin: 8px 0 4px;
+    }
+
+    .subtitle {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        margin-bottom: 24px;
+        text-align: center;
+    }
+
+    .card {
+        background: rgba(255,255,255,0.04);
+        border: 1px solid var(--card-border);
+        border-radius: var(--radius);
+        padding: 24px;
+        width: 100%;
+        max-width: 420px;
+    }
+
+    .config-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 16px;
+    }
+
+    .config-group label {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--text-muted);
+    }
+
+    .config-group input {
+        background: rgba(255,255,255,0.06);
+        border: 1px solid var(--card-border);
+        border-radius: var(--radius-sm);
+        padding: 12px 14px;
+        color: var(--text-main);
+        font-size: 1rem;
+    }
+
+    .config-group input:focus {
+        outline: none;
+        border-color: var(--primary);
+    }
+
+    .btn {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        padding: 14px 18px;
+        border-radius: var(--radius-sm);
+        border: none;
+        font-weight: 700;
+        font-size: 1.05rem;
+        cursor: pointer;
+        margin-top: 8px;
+        transition: all 0.15s ease;
+        position: relative;
+        overflow: hidden;
+        color: white;
+    }
+
+    .btn::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -60%;
+        width: 40%;
+        height: 200%;
+        background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0) 100%);
+        transform: rotate(25deg);
+        animation: shimmer 3s infinite;
+    }
+
+    @keyframes shimmer {
+        0% { left: -60%; }
+        20% { left: 140%; }
+        100% { left: 140%; }
+    }
+
+    .btn:active { transform: scale(0.97); }
+
+    .btn-primary {
+        background: var(--primary);
+        box-shadow: 0 4px 12px rgba(255, 71, 87, 0.3);
+    }
+
+    .btn-success {
+        background: var(--success);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-warning {
+        background: var(--warning);
+        color: #0f172a;
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    }
+
+    .btn-secondary {
+        background: rgba(255,255,255,0.08);
+        color: var(--text-main);
+        border: 1px solid var(--card-border);
+        box-shadow: none;
+    }
+
+    .btn-secondary::after { display: none; }
+
+    .btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        transform: none !important;
+        box-shadow: none !important;
+    }
+
+    .btn:disabled::after { display: none; }
+
+    .status-line {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        text-align: center;
+        margin-top: 14px;
+        min-height: 18px;
+    }
+
+    .status-line.error { color: var(--primary-hover); }
+    .status-line.ok { color: var(--success); }
+
+    .screen { display: none; width: 100%; max-width: 900px; }
+    .screen.active { display: flex; flex-direction: column; align-items: center; }
+
+    .room-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        margin-bottom: 18px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .room-code-badge {
+        background: rgba(255,255,255,0.08);
+        border: 1px solid var(--card-border);
+        border-radius: 20px;
+        padding: 8px 16px;
+        font-weight: 800;
+        letter-spacing: 2px;
+        font-size: 1.1rem;
+    }
+
+    .room-code-label {
+        font-weight: 600;
+        letter-spacing: normal;
+        font-size: 0.72rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        display: block;
+        margin-bottom: 1px;
+    }
+
+    .leave-btn {
+        background: rgba(255,71,87,0.15);
+        border: 1px solid var(--primary);
+        color: var(--primary-hover);
+        border-radius: var(--radius-sm);
+        padding: 8px 16px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    #video-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 12px;
+        width: 100%;
+    }
+
+    .video-tile {
+        position: relative;
+        background: #000;
+        border-radius: var(--radius-sm);
+        overflow: hidden;
+        aspect-ratio: 4 / 3;
+        border: 2px solid var(--card-border);
+    }
+
+    .video-tile.self { border-color: var(--success); }
+    .video-tile.speaking { border-color: var(--warning); }
+
+    .video-tile.reconnecting { border-color: var(--warning); animation: pulse-reconnect 1.2s infinite; }
+    .video-tile.reconnecting::after {
+        content: '🔄 Reconnexion...';
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        background: rgba(15,23,42,0.85);
+        color: var(--warning);
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 3px 8px;
+        border-radius: 10px;
+    }
+
+    @keyframes pulse-reconnect {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+    }
+
+    .video-tile video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transform: scaleX(-1);
+    }
+
+    .video-tile.remote video { transform: none; }
+
+    .video-tile .name-tag {
+        position: absolute;
+        bottom: 6px;
+        left: 6px;
+        background: rgba(15,23,42,0.75);
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 0.78rem;
+        font-weight: 700;
+    }
+
+    .video-tile .cam-off-icon {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 2rem;
+        opacity: 0.5;
+        display: none;
+    }
+
+    .controls-bar {
+        display: flex;
+        gap: 12px;
+        margin-top: 20px;
+    }
+
+    .control-btn {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        border: 1px solid var(--card-border);
+        background: rgba(255,255,255,0.08);
+        color: var(--text-main);
+        font-size: 1.3rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .control-btn.off {
+        background: var(--primary);
+        border-color: var(--primary);
+    }
+
+    .participant-count {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        margin-top: 16px;
+    }
+
+    .setup-note {
+        background: rgba(255,165,2,0.1);
+        border: 1px solid var(--warning);
+        border-radius: var(--radius-sm);
+        padding: 12px 14px;
+        font-size: 0.8rem;
+        color: var(--warning);
+        margin-top: 16px;
+        line-height: 1.5;
+        display: none;
+    }
+
+    /* --- ZONE DE JEU --- */
+    #game-section {
+        width: 100%;
+        max-width: 500px;
+        margin-top: 24px;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid var(--card-border);
+        border-radius: var(--radius);
+        padding: 20px;
+    }
+
+    #game-section h2 {
+        font-size: 1.1rem;
+        margin: 0 0 14px;
+        text-align: center;
+    }
+
+    .waiting-text {
+        text-align: center;
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        line-height: 1.6;
+    }
+
+    .team-count-stepper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        margin-bottom: 16px;
+    }
+
+    .stepper-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: 1px solid var(--card-border);
+        background: rgba(255,255,255,0.08);
+        color: var(--text-main);
+        font-size: 1.2rem;
+        font-weight: 800;
+        cursor: pointer;
+    }
+
+    .stepper-value {
+        font-size: 1.4rem;
+        font-weight: 900;
+        min-width: 30px;
+        text-align: center;
+    }
+
+    .timer-select {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        margin-bottom: 18px;
+        flex-wrap: wrap;
+    }
+
+    .timer-option {
+        padding: 8px 14px;
+        border-radius: 20px;
+        border: 1px solid var(--card-border);
+        background: rgba(255,255,255,0.06);
+        color: var(--text-muted);
+        font-weight: 700;
+        font-size: 0.85rem;
+        cursor: pointer;
+    }
+
+    .timer-option.active {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: white;
+    }
+
+    .team-preview {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 18px;
+        font-size: 0.85rem;
+    }
+
+    .team-preview-row {
+        display: flex;
+        justify-content: space-between;
+        background: rgba(255,255,255,0.05);
+        padding: 8px 12px;
+        border-radius: var(--radius-sm);
+    }
+
+    .team-group {
+        border: 1px solid var(--card-border);
+        border-radius: var(--radius-sm);
+        padding: 8px;
+        margin-bottom: 8px;
+    }
+
+    .team-group-title {
+        font-size: 0.75rem;
+        font-weight: 800;
+        color: var(--warning);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 6px;
+        padding: 0 4px;
+    }
+
+    .team-group .team-preview-row {
+        margin-bottom: 4px;
+    }
+
+    .team-group .team-preview-row:last-child {
+        margin-bottom: 0;
+    }
+
+    .team-group-empty {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+        padding: 6px 4px;
+        font-style: italic;
+    }
+
+    .team-pick-group {
+        display: flex;
+        gap: 4px;
+    }
+
+    .team-pick-btn {
+        width: 26px;
+        height: 26px;
+        border-radius: 6px;
+        border: 1px solid var(--card-border);
+        background: rgba(255,255,255,0.06);
+        color: var(--text-muted);
+        font-size: 0.78rem;
+        font-weight: 700;
+        cursor: pointer;
+        padding: 0;
+    }
+
+    .team-pick-btn.active {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: white;
+    }
+
+    .turn-banner {
+        text-align: center;
+        margin-bottom: 14px;
+    }
+
+    .turn-banner .active-player-name {
+        font-size: 1.2rem;
+        font-weight: 900;
+        color: var(--warning);
+    }
+
+    .turn-banner .active-team-name {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+    }
+
+    .timer-row {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 14px;
+    }
+
+    .game-timer {
+        text-align: center;
+        font-size: 2.4rem;
+        font-weight: 900;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .game-timer.warning { color: var(--primary); }
+
+    .game-timer.paused { color: var(--warning); }
+
+    .pause-toggle-btn {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--card-border);
+        color: var(--text-main);
+        width: 38px;
+        height: 38px;
+        min-width: 38px;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+    }
+
+    .pause-toggle-btn:active { transform: scale(0.92); }
+
+    .word-card {
+        background: linear-gradient(135deg, var(--primary), #ff6348);
+        border-radius: var(--radius);
+        padding: 30px 16px;
+        text-align: center;
+        font-size: 1.8rem;
+        font-weight: 900;
+        margin-bottom: 16px;
+        min-height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .word-card.locked {
+        background: rgba(255,255,255,0.05);
+        color: var(--text-muted);
+        font-size: 1rem;
+        font-weight: 600;
+    }
+
+    .game-action-btns {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 18px;
+    }
+
+    .scoreboard {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .scoreboard-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 12px;
+        background: rgba(255,255,255,0.05);
+        border-radius: var(--radius-sm);
+        font-size: 0.9rem;
+    }
+
+    .scoreboard-row.mine {
+        border: 1px solid var(--success);
+    }
+
+    .scoreboard-row .pts {
+        font-weight: 900;
+        color: var(--warning);
+    }
+
+    .theme-select {
+        width: 100%;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid var(--card-border);
+        border-radius: var(--radius-sm);
+        padding: 12px 14px;
+        color: var(--text-main);
+        font-size: 0.95rem;
+    }
+
+    .checkbox-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 4px;
+    }
+
+    .checkbox-row input {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--primary);
+    }
+
+    .checkbox-row label {
+        font-size: 0.9rem;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .checkbox-hint {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+        line-height: 1.4;
+        margin: 0 0 16px 28px;
+    }
+
+    .team-preview-row {
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .team-preview-row:active { opacity: 0.7; }
+
+    .round-pill {
+        display: block;
+        text-align: center;
+        background: rgba(255,255,255,0.08);
+        border: 1px solid var(--card-border);
+        border-radius: 20px;
+        padding: 4px 14px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        margin: 0 auto 12px;
+        width: fit-content;
+    }
+
+    .turn-confirm-card {
+        text-align: center;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid var(--warning);
+        border-radius: var(--radius);
+        padding: 24px 16px;
+        margin-bottom: 14px;
+    }
+
+    .turn-confirm-icon {
+        font-size: 2.2rem;
+        margin-bottom: 6px;
+    }
+
+    .turn-confirm-title {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .turn-confirm-name {
+        font-size: 1.5rem;
+        font-weight: 900;
+        color: var(--warning);
+        margin: 4px 0;
+    }
+
+    .turn-confirm-team {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        margin-bottom: 14px;
+    }
+
+    .undo-link {
+        display: block;
+        width: 100%;
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        font-size: 0.78rem;
+        text-decoration: underline;
+        cursor: pointer;
+        margin: 6px 0 14px;
+        padding: 0;
+    }
+
+    #trophies-container {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin: 16px 0;
+    }
+
+    .trophy-card {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid var(--card-border);
+        border-radius: var(--radius-sm);
+        padding: 10px 14px;
+    }
+
+    .trophy-icon { font-size: 1.6rem; }
+    .trophy-details { display: flex; flex-direction: column; font-size: 0.82rem; }
+    .trophy-title { font-weight: 800; color: var(--warning); }
+    .trophy-winner { font-weight: 700; }
+    .trophy-desc { color: var(--text-muted); font-size: 0.75rem; }
+
+    .word-recap-toggle {
+        width: 100%;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid var(--card-border);
+        color: var(--text-main);
+        padding: 10px 14px;
+        border-radius: var(--radius-sm);
+        font-weight: 700;
+        font-size: 0.85rem;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        margin-top: 8px;
+    }
+
+    .word-recap-body {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+        font-size: 0.82rem;
+    }
+
+    .word-recap-body.open { max-height: 300px; overflow-y: auto; margin-top: 8px; }
+
+    .recap-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 6px 10px;
+        border-bottom: 1px solid var(--card-border);
+    }
+
+    .recap-row .recap-passes { color: var(--warning); }
+
+    /* --- SPOTLIGHT VIDÉO (joueur actif, ou hôte avant le début de la partie) ---
+       Affiché en permanence dès l'entrée dans le salon : grande vignette en haut,
+       les autres participants plus petits juste en dessous. Flux normal (léger
+       scroll autorisé si besoin), rien n'est figé en position fixe. */
+    #spotlight-area {
+        display: none;
+        width: 100%;
+        margin-bottom: 8px;
+    }
+
+    #spotlight-area.active { display: block; }
+
+    #spotlight-area .video-tile {
+        aspect-ratio: 16 / 10;
+        border-color: var(--warning);
+        box-shadow: 0 0 24px rgba(245,158,11,0.3);
+        max-height: 38vh;
+    }
+
+    #video-grid.has-spotlight {
+        grid-template-columns: repeat(auto-fit, minmax(var(--tile-min, 90px), 1fr));
+    }
+
+    #video-grid.has-spotlight .video-tile {
+        aspect-ratio: 1 / 1;
+        max-height: 110px;
+    }
+
+    .game-toast {
+        position: fixed;
+        top: 16px;
+        left: 50%;
+        transform: translateX(-50%) translateY(-10px);
+        background: rgba(15, 23, 42, 0.95);
+        border: 1px solid var(--warning);
+        color: var(--text-main);
+        padding: 8px 18px;
+        border-radius: 20px;
+        font-weight: 800;
+        font-size: 0.9rem;
+        white-space: nowrap;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s ease, transform 0.25s ease;
+        z-index: 50;
+    }
+
+    .game-toast.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+
+    .game-toast.joker {
+        border-color: #ffa502;
+        color: #ffa502;
+        box-shadow: 0 0 20px rgba(255, 165, 2, 0.5);
+    }
+
+    .game-toast.combo {
+        border-color: var(--primary);
+        color: var(--primary-hover);
+        box-shadow: 0 0 20px rgba(255, 71, 87, 0.5);
+    }
+</style>
+</head>
+<body>
+
+<div id="app-header">
+    <h1>🎥 Rush'Up! Live</h1>
+    <div class="subtitle">Étape 2/3 — Salon vidéo + partie synchronisée (Supabase Realtime + WebRTC)</div>
+</div>
+
+<!-- ÉCRAN 1 : Entrée dans un salon -->
+<div id="entry-screen" class="screen active">
+    <div class="card" id="entry-choice-card">
+        <h2 style="text-align:center; margin: 0 0 18px; font-size: 1.1rem;">Comment veux-tu jouer ?</h2>
+        <button class="btn btn-primary" onclick="showCreateForm()">🆕 Créer un salon</button>
+        <button class="btn btn-secondary" onclick="showJoinForm()">🚪 Rejoindre un salon</button>
+        <div class="setup-note" id="config-warning">
+            ⚠️ Configuration Supabase manquante : ouvre ce fichier et renseigne SUPABASE_URL et SUPABASE_ANON_KEY tout en haut du script.
+        </div>
+    </div>
+
+    <div class="card" id="create-form-card" style="display:none;">
+        <h2 style="text-align:center; margin: 0 0 18px; font-size: 1.1rem;">🆕 Créer un salon</h2>
+        <div class="config-group">
+            <label for="create-name-input">Ton prénom</label>
+            <input type="text" id="create-name-input" placeholder="Ex: Léo" maxlength="20">
+        </div>
+        <button class="btn btn-primary" onclick="createRoom()">Créer le salon (tu seras l'hôte)</button>
+        <button class="btn btn-secondary" onclick="backToEntryChoice()">◀️ Retour</button>
+        <div class="status-line" id="create-status"></div>
+    </div>
+
+    <div class="card" id="join-form-card" style="display:none;">
+        <h2 style="text-align:center; margin: 0 0 18px; font-size: 1.1rem;">🚪 Rejoindre un salon</h2>
+        <div class="config-group">
+            <label for="join-name-input">Ton prénom</label>
+            <input type="text" id="join-name-input" placeholder="Ex: Léo" maxlength="20">
+        </div>
+        <div class="config-group">
+            <label for="join-code-input">Code du salon</label>
+            <input type="text" id="join-code-input" placeholder="Ex: LAPIN42" maxlength="12" style="text-transform: uppercase;">
+        </div>
+        <button class="btn btn-primary" onclick="joinExistingRoom()">Rejoindre</button>
+        <button class="btn btn-secondary" onclick="backToEntryChoice()">◀️ Retour</button>
+        <div class="status-line" id="join-status"></div>
+    </div>
+</div>
+
+<!-- ÉCRAN 2 : Salon vidéo -->
+<div id="room-screen" class="screen">
+    <div class="room-header">
+        <div class="room-code-badge"><span class="room-code-label">Code de session</span> <span id="room-code-display">—</span></div>
+        <button class="leave-btn" onclick="leaveRoom()">🚪 Quitter le salon</button>
+    </div>
+
+    <div id="video-zone">
+        <div id="spotlight-area"></div>
+        <div id="video-grid"></div>
+    </div>
+
+    <div class="controls-bar">
+        <button class="control-btn" id="toggle-mic-btn" onclick="toggleMic()" aria-label="Micro">🎤</button>
+        <button class="control-btn" id="toggle-cam-btn" onclick="toggleCam()" aria-label="Caméra">📹</button>
+    </div>
+
+    <div class="participant-count" id="participant-count">1 participant</div>
+
+    <!-- ZONE DE JEU -->
+    <div id="game-section">
+        <!-- Attente / configuration -->
+        <div id="game-waiting-view">
+            <h2>🎮 Partie</h2>
+            <div id="non-host-waiting" class="waiting-text" style="display:none;">
+                En attente que l'hôte configure et lance la partie...
+            </div>
+            <div id="host-config-view" style="display:none;">
+                <div class="config-group">
+                    <label>Thème</label>
+                    <select id="theme-select" class="theme-select"></select>
+                </div>
+
+                <div class="config-group">
+                    <label>Nombre de mots</label>
+                    <div class="timer-select" id="wordcount-select">
+                        <div class="timer-option" data-val="30" onclick="selectWordCount(30)">30</div>
+                        <div class="timer-option active" data-val="40" onclick="selectWordCount(40)">40</div>
+                        <div class="timer-option" data-val="60" onclick="selectWordCount(60)">60</div>
+                        <div class="timer-option" data-val="80" onclick="selectWordCount(80)">80</div>
+                    </div>
+                </div>
+
+                <div class="config-group">
+                    <label>Durée du chrono</label>
+                    <div class="timer-select" id="timer-select">
+                        <div class="timer-option" data-val="30" onclick="selectTimer(30)">30s</div>
+                        <div class="timer-option active" data-val="45" onclick="selectTimer(45)">45s</div>
+                        <div class="timer-option" data-val="60" onclick="selectTimer(60)">60s</div>
+                        <div class="timer-option" data-val="90" onclick="selectTimer(90)">90s</div>
+                    </div>
+                </div>
+
+                <div class="team-count-stepper">
+                    <button type="button" class="stepper-btn" onclick="adjustTeamCount(-1)">−</button>
+                    <span class="stepper-value" id="team-count-value">2</span>
+                    <span style="color:var(--text-muted); font-size:0.85rem;">équipes</span>
+                    <button type="button" class="stepper-btn" onclick="adjustTeamCount(1)">+</button>
+                </div>
+
+                <div class="config-group">
+                    <label>Répartition des joueurs (touche un nom pour changer son équipe)</label>
+                    <div class="team-preview" id="team-preview"></div>
+                </div>
+
+                <div class="config-group">
+                    <label>Passer les cartes</label>
+                    <select id="passrule-select" class="theme-select">
+                        <option value="byRound" selected>Par défaut (interdit en manche 1, autorisé ensuite)</option>
+                        <option value="always">Toujours autoriser</option>
+                        <option value="never">Toujours interdire</option>
+                    </select>
+                </div>
+
+                <div class="checkbox-row">
+                    <input type="checkbox" id="penalty-toggle" onchange="togglePenaltyDropdown()">
+                    <label for="penalty-toggle">Pénalité de temps au passage</label>
+                </div>
+                <div id="penalty-dropdown-container" style="display:none; margin: -6px 0 14px 28px;">
+                    <select id="penalty-seconds-select" class="theme-select">
+                        <option value="1">1 seconde</option><option value="2">2 secondes</option><option value="3">3 secondes</option>
+                        <option value="4">4 secondes</option><option value="5" selected>5 secondes</option><option value="6">6 secondes</option>
+                        <option value="7">7 secondes</option><option value="8">8 secondes</option><option value="9">9 secondes</option>
+                        <option value="10">10 secondes</option>
+                    </select>
+                </div>
+
+                <div class="checkbox-row">
+                    <input type="checkbox" id="joker-toggle">
+                    <label for="joker-toggle">Mot joker</label>
+                </div>
+                <div class="checkbox-hint">Un mot du paquet est tiré au sort en secret et rapporte le double de points s'il est trouvé. Personne ne sait lequel avant qu'il soit deviné !</div>
+
+                <button class="btn btn-primary" id="start-game-btn" onclick="hostStartGame()" disabled>🚀 Démarrer la partie</button>
+                <div class="status-line" id="host-config-status">Il faut au moins 2 joueurs connectés.</div>
+            </div>
+        </div>
+
+        <!-- Intro de manche -->
+        <div id="round-intro-view" style="display:none;">
+            <h2 id="round-intro-title">Manche 1</h2>
+            <p class="waiting-text" id="round-intro-hint"></p>
+            <div id="round-intro-host-btn-wrap" style="display:none;">
+                <button class="btn btn-primary" onclick="hostBeginRound()">🚀 Démarrer la manche</button>
+            </div>
+            <div id="round-intro-wait-text" class="waiting-text" style="display:none;">En attente que l'hôte lance la manche...</div>
+        </div>
+
+        <!-- Partie en cours -->
+        <div id="game-active-view" style="display:none;">
+            <div class="round-pill" id="round-pill">Manche 1</div>
+
+            <!-- Transition entre deux joueurs : confirmation avant de démarrer le chrono -->
+            <div id="turn-confirm-view">
+                <div class="turn-confirm-card">
+                    <div class="turn-confirm-icon">🎙️</div>
+                    <div class="turn-confirm-title">C'est au tour de</div>
+                    <div class="turn-confirm-name" id="turn-confirm-name">—</div>
+                    <div class="turn-confirm-team" id="turn-confirm-team">—</div>
+                    <button class="btn btn-primary" id="turn-confirm-ready-btn" onclick="sendPlayerAction('ready')" style="display:none;">🚀 C'est parti !</button>
+                    <div class="waiting-text" id="turn-confirm-wait-text" style="display:none;">En attente que ce joueur confirme...</div>
+                </div>
+            </div>
+
+            <!-- Tour en cours -->
+            <div id="turn-active-view" style="display:none;">
+                <div class="turn-banner">
+                    <div class="active-player-name" id="active-player-name">—</div>
+                    <div class="active-team-name" id="active-team-name">—</div>
+                </div>
+                <div class="timer-row">
+                    <div class="game-timer" id="game-timer-display">--</div>
+                    <button class="pause-toggle-btn" id="pause-btn" onclick="togglePause()" style="display:none;" aria-label="Pause">⏸️</button>
+                </div>
+                <div class="word-card locked" id="word-card">En attente...</div>
+                <div class="game-action-btns" id="game-action-btns" style="display:none;">
+                    <button class="btn btn-primary" id="pass-btn" onclick="sendPlayerAction('pass')">↩️ Passer</button>
+                    <button class="btn btn-success" onclick="sendPlayerAction('found')">✅ Trouvé !</button>
+                </div>
+                <button class="undo-link" id="undo-btn" onclick="sendPlayerAction('undo')" style="display:none;">↺ Annuler le dernier mot trouvé</button>
+            </div>
+
+            <div class="scoreboard" id="scoreboard"></div>
+        </div>
+
+        <!-- Fin de manche (manches 1 et 2) -->
+        <div id="round-end-view" style="display:none;">
+            <h2>🏁 Fin de la manche</h2>
+            <div class="scoreboard" id="round-end-scoreboard"></div>
+            <div id="round-end-host-btn-wrap" style="display:none;">
+                <button class="btn btn-primary" onclick="hostGoToNextRoundIntro()">➡️ Manche suivante</button>
+            </div>
+            <div id="round-end-wait-text" class="waiting-text" style="display:none;">En attente de l'hôte...</div>
+        </div>
+
+        <!-- Fin de partie -->
+        <div id="final-view" style="display:none;">
+            <h2 id="final-title">🎉 Partie terminée !</h2>
+            <div class="scoreboard" id="final-scoreboard"></div>
+            <div id="trophies-container"></div>
+            <button type="button" class="word-recap-toggle" onclick="toggleWordRecap()">
+                <span>📜 Voir tous les mots de la partie</span>
+                <span id="word-recap-arrow">▾</span>
+            </button>
+            <div class="word-recap-body" id="word-recap-body"></div>
+            <div id="final-host-btn-wrap" style="display:none;">
+                <button class="btn btn-primary" onclick="hostRestartToConfig()">🔁 Nouvelle partie</button>
+            </div>
+            <div id="final-wait-text" class="waiting-text" style="display:none;">En attente de l'hôte...</div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+    // ================================================================
+    // CONFIGURATION — à renseigner avec les clés de TON projet Supabase
+    // (Dashboard Supabase > Project Settings > API)
+    // ================================================================
+    const SUPABASE_URL = 'https://dxdpnvjcwmztrhhutzqc.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_QHqZrcPH1pFBU80tLkk9bA_eUUFMWdn';
+
+    // Serveurs STUN publics (gratuits) pour établir les connexions WebRTC,
+    // + un serveur TURN de secours pour les réseaux restrictifs (wifi
+    // d'entreprise, certaines box 4G) où une connexion directe échoue.
+    // Ce TURN est un service public de démonstration (Open Relay Project) :
+    // pratique pour tester, mais pas garanti à 100% dans la durée. Si les
+    // coupures persistent, crée un compte gratuit sur metered.ca/turn-server
+    // pour des identifiants TURN dédiés à toi.
+    const ICE_SERVERS = [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+        { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+        { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
+    ];
+    // ================================================================
+
+    let supabaseClient = null;
+    let channel = null;
+    let localStream = null;
+    let myId = crypto.randomUUID();
+    let myName = '';
+    let roomCode = '';
+    let micOn = true;
+    let camOn = true;
+
+    const peerConnections = {}; // peerId -> RTCPeerConnection
+    const remoteNames = {};     // peerId -> name
+
+    function isConfigured() {
+        return SUPABASE_URL && SUPABASE_URL !== 'YOUR_SUPABASE_URL' &&
+               SUPABASE_ANON_KEY && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY';
+    }
+
+    window.addEventListener('load', () => {
+        if (!isConfigured()) {
+            document.getElementById('config-warning').style.display = 'block';
+            return;
+        }
+        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    });
+
+    // --- NAVIGATION ENTRE LES 3 CARTES DE L'ÉCRAN D'ACCUEIL ---
+    function showCreateForm() {
+        document.getElementById('entry-choice-card').style.display = 'none';
+        document.getElementById('join-form-card').style.display = 'none';
+        document.getElementById('create-form-card').style.display = 'block';
+    }
+
+    function showJoinForm() {
+        document.getElementById('entry-choice-card').style.display = 'none';
+        document.getElementById('create-form-card').style.display = 'none';
+        document.getElementById('join-form-card').style.display = 'block';
+    }
+
+    function backToEntryChoice() {
+        document.getElementById('create-form-card').style.display = 'none';
+        document.getElementById('join-form-card').style.display = 'none';
+        document.getElementById('entry-choice-card').style.display = 'block';
+    }
+
+    function generateRoomCode() {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sans I/O/0/1 (ambigus à l'oral)
+        let code = '';
+        for (let i = 0; i < 5; i++) code += chars[Math.floor(Math.random() * chars.length)];
+        return code;
+    }
+
+    function setStatus(elId, msg, type) {
+        const el = document.getElementById(elId);
+        el.innerText = msg || '';
+        el.className = 'status-line' + (type ? ` ${type}` : '');
+    }
+
+    async function createRoom() {
+        const nameInput = document.getElementById('create-name-input').value.trim();
+        if (!nameInput) { setStatus('create-status', 'Entre ton prénom.', 'error'); return; }
+        myName = nameInput;
+        roomCode = generateRoomCode();
+        await connectToRoom('create-status');
+    }
+
+    async function joinExistingRoom() {
+        const nameInput = document.getElementById('join-name-input').value.trim();
+        const roomInput = document.getElementById('join-code-input').value.trim().toUpperCase();
+        if (!nameInput) { setStatus('join-status', 'Entre ton prénom.', 'error'); return; }
+        if (!roomInput) { setStatus('join-status', 'Entre le code du salon.', 'error'); return; }
+        myName = nameInput;
+        roomCode = roomInput;
+        await connectToRoom('join-status');
+    }
+
+    async function connectToRoom(statusElId) {
+        setStatus(statusElId, 'Activation de la caméra...', null);
+
+        try {
+            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        } catch (err) {
+            setStatus(statusElId, "Impossible d'accéder à la caméra/micro. Vérifie les autorisations du navigateur.", 'error');
+            return;
+        }
+
+        setStatus(statusElId, 'Connexion au salon...', null);
+
+        document.getElementById('room-code-display').innerText = roomCode;
+        addVideoTile(myId, myName, localStream, true);
+
+        channel = supabaseClient.channel(`room-${roomCode}`, {
+            config: {
+                presence: { key: myId },
+                broadcast: { self: false }
+            }
+        });
+
+        channel.on('presence', { event: 'sync' }, handlePresenceSync);
+        channel.on('presence', { event: 'join' }, ({ newPresences }) => handlePresenceJoin(newPresences));
+        channel.on('presence', { event: 'leave' }, ({ leftPresences }) => handlePresenceLeave(leftPresences));
+        channel.on('broadcast', { event: 'webrtc-signal' }, ({ payload }) => handleSignal(payload));
+        channel.on('broadcast', { event: 'game-msg' }, ({ payload }) => handleGameMessage(payload));
+
+        channel.subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+                await channel.track({ id: myId, name: myName, joinedAt: Date.now() });
+                showScreen('room-screen');
+                setStatus(statusElId, '', null);
+            } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+                setStatus(statusElId, 'Connexion au salon impossible. Vérifie ta configuration Supabase.', 'error');
+            }
+        });
+    }
+
+    function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        // Le bandeau titre ne sert qu'à l'écran d'accueil : on le masque en salon pour gagner de la place.
+        document.getElementById('app-header').style.display = (id === 'entry-screen') ? 'block' : 'none';
+    }
+
+    // --- PRÉSENCE ---
+    let presentPlayers = {}; // id -> name, pour tous les joueurs actuellement connectés
+    let presentPlayersJoinedAt = {}; // id -> horodatage d'arrivée dans le salon (détermine l'hôte)
+
+    function handlePresenceSync() {
+        const state = channel.presenceState();
+        const presentIds = new Set();
+        presentPlayers = {};
+        presentPlayersJoinedAt = {};
+        Object.keys(state).forEach(key => {
+            state[key].forEach(p => {
+                presentIds.add(p.id);
+                presentPlayers[p.id] = p.name;
+                presentPlayersJoinedAt[p.id] = p.joinedAt || Date.now();
+                if (p.id !== myId && !peerConnections[p.id]) {
+                    remoteNames[p.id] = p.name;
+                    connectToPeer(p.id);
+                }
+            });
+        });
+        updateParticipantCount();
+        refreshHostStatus();
+        if (gameState.phase === 'lobby') setSpotlightPlayer(getHostId());
+    }
+
+    function handlePresenceJoin(newPresences) {
+        newPresences.forEach(p => {
+            presentPlayers[p.id] = p.name;
+            presentPlayersJoinedAt[p.id] = p.joinedAt || Date.now();
+            if (p.id !== myId && !peerConnections[p.id]) {
+                remoteNames[p.id] = p.name;
+                connectToPeer(p.id);
+            }
+        });
+        updateParticipantCount();
+        refreshHostStatus();
+        if (gameState.phase === 'lobby') setSpotlightPlayer(getHostId());
+    }
+
+    function handlePresenceLeave(leftPresences) {
+        leftPresences.forEach(p => {
+            delete presentPlayers[p.id];
+            delete presentPlayersJoinedAt[p.id];
+            closePeerConnection(p.id);
+            removeVideoTile(p.id);
+        });
+        updateParticipantCount();
+        refreshHostStatus();
+
+        // Si la partie est en cours, on rafraîchit l'affichage des boutons réservés à l'hôte
+        // (utile si c'est justement l'ancien hôte qui vient de partir : le relais est immédiat).
+        if (gameState.phase !== 'lobby') {
+            applyGameState(gameState);
+        }
+
+        // Si le joueur qui vient de partir avait la main, le nouvel hôte doit faire avancer le tour
+        if (isHost() && gameState.phase === 'playing') {
+            leftPresences.forEach(p => {
+                if (p.id === gameState.activePlayerId) {
+                    hostAdvanceTurn();
+                }
+            });
+        }
+    }
+
+    function updateParticipantCount() {
+        const n = document.querySelectorAll('.video-tile').length;
+        const el = document.getElementById('participant-count');
+        el.innerText = n <= 1 ? '1 participant (toi seul pour le moment)' : `${n} participants`;
+    }
+
+    // --- WEBRTC ---
+    function connectToPeer(peerId) {
+        // Convention pour éviter que les deux pairs s'envoient une offre en même temps :
+        // seul celui dont l'ID est "le plus petit" initie l'offre.
+        const pc = getOrCreatePeerConnection(peerId);
+        if (myId < peerId) {
+            initiateOffer(peerId, pc);
+        }
+    }
+
+    const reconnectTimers = {};
+    const reconnectAttempts = {};
+
+    function getOrCreatePeerConnection(peerId) {
+        if (peerConnections[peerId]) return peerConnections[peerId];
+
+        const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+        peerConnections[peerId] = pc;
+        reconnectAttempts[peerId] = 0;
+
+        if (localStream) {
+            localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+        }
+
+        pc.onicecandidate = (event) => {
+            if (event.candidate) {
+                sendSignal(peerId, 'ice', event.candidate);
+            }
+        };
+
+        pc.ontrack = (event) => {
+            addVideoTile(peerId, remoteNames[peerId] || 'Joueur', event.streams[0], false);
+        };
+
+        pc.onconnectionstatechange = () => {
+            const state = pc.connectionState;
+
+            if (state === 'connected') {
+                // Tout va bien : on annule toute tentative de reconnexion en cours
+                clearTimeout(reconnectTimers[peerId]);
+                delete reconnectTimers[peerId];
+                reconnectAttempts[peerId] = 0;
+                setTileReconnecting(peerId, false);
+            } else if (state === 'disconnected') {
+                // Souvent temporaire (petit accroc réseau/wifi) : on laisse une chance
+                // de récupérer tout seul avant de tenter quoi que ce soit.
+                setTileReconnecting(peerId, true);
+                clearTimeout(reconnectTimers[peerId]);
+                reconnectTimers[peerId] = setTimeout(() => attemptIceRestart(peerId), 4000);
+            } else if (state === 'failed') {
+                setTileReconnecting(peerId, true);
+                attemptIceRestart(peerId);
+            }
+            // NB : volontairement, aucun cas ne retire la vignette vidéo ici. Un bug de
+            // connexion ne doit jamais faire disparaître la caméra d'un joueur — seul un
+            // départ explicite du salon (présence Supabase) le fait (cf. handlePresenceLeave).
+        };
+
+        return pc;
+    }
+
+    function setTileReconnecting(peerId, isReconnecting) {
+        const tile = document.getElementById(`tile-${peerId}`);
+        if (tile) tile.classList.toggle('reconnecting', isReconnecting);
+    }
+
+    async function attemptIceRestart(peerId) {
+        const pc = peerConnections[peerId];
+        if (!pc) return;
+
+        reconnectAttempts[peerId] = (reconnectAttempts[peerId] || 0) + 1;
+
+        // On continue à réessayer indéfiniment (délai croissant, plafonné) tant que le
+        // joueur est toujours dans le salon : la vignette reste affichée dans tous les cas,
+        // avec l'indicateur "reconnexion..." tant que ce n'est pas rétabli.
+        const nextDelay = Math.min(3000 + reconnectAttempts[peerId] * 2000, 15000);
+        clearTimeout(reconnectTimers[peerId]);
+        reconnectTimers[peerId] = setTimeout(() => {
+            if (peerConnections[peerId] && peerConnections[peerId].connectionState !== 'connected') {
+                attemptIceRestart(peerId);
+            }
+        }, nextDelay);
+
+        // Seul l'initiateur historique relance une offre, même convention que la connexion initiale
+        if (myId < peerId) {
+            try {
+                const offer = await pc.createOffer({ iceRestart: true });
+                await pc.setLocalDescription(offer);
+                sendSignal(peerId, 'offer', offer);
+            } catch (err) {
+                // Rien de plus à faire ici : le prochain cycle de retry réessaiera
+            }
+        }
+    }
+
+    async function initiateOffer(peerId, pc) {
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        sendSignal(peerId, 'offer', offer);
+    }
+
+    function sendSignal(to, type, data) {
+        channel.send({
+            type: 'broadcast',
+            event: 'webrtc-signal',
+            payload: { to, from: myId, type, data }
+        });
+    }
+
+    async function handleSignal(payload) {
+        if (payload.to !== myId) return;
+        const peerId = payload.from;
+        const pc = getOrCreatePeerConnection(peerId);
+
+        if (payload.type === 'offer') {
+            await pc.setRemoteDescription(new RTCSessionDescription(payload.data));
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            sendSignal(peerId, 'answer', answer);
+        } else if (payload.type === 'answer') {
+            await pc.setRemoteDescription(new RTCSessionDescription(payload.data));
+        } else if (payload.type === 'ice') {
+            try {
+                await pc.addIceCandidate(new RTCIceCandidate(payload.data));
+            } catch (err) {
+                // Candidat ICE arrivé trop tôt/tard : sans conséquence en général
+            }
+        }
+    }
+
+    function closePeerConnection(peerId) {
+        if (peerConnections[peerId]) {
+            peerConnections[peerId].close();
+            delete peerConnections[peerId];
+        }
+        delete remoteNames[peerId];
+        clearTimeout(reconnectTimers[peerId]);
+        delete reconnectTimers[peerId];
+        delete reconnectAttempts[peerId];
+    }
+
+    // --- AFFICHAGE VIDÉO ---
+    function addVideoTile(id, name, stream, isSelf) {
+        let tile = document.getElementById(`tile-${id}`);
+        if (!tile) {
+            tile = document.createElement('div');
+            tile.id = `tile-${id}`;
+            tile.className = 'video-tile' + (isSelf ? ' self' : ' remote');
+
+            const video = document.createElement('video');
+            video.autoplay = true;
+            video.playsInline = true;
+            if (isSelf) video.muted = true;
+
+            const nameTag = document.createElement('div');
+            nameTag.className = 'name-tag';
+            nameTag.innerText = isSelf ? `${name} (toi)` : name;
+
+            tile.appendChild(video);
+            tile.appendChild(nameTag);
+            const targetContainer = (id === currentSpotlightId)
+                ? document.getElementById('spotlight-area')
+                : document.getElementById('video-grid');
+            targetContainer.appendChild(tile);
+        }
+        tile.querySelector('video').srcObject = stream;
+        updateParticipantCount();
+        updateOthersTileSize();
+    }
+
+    function removeVideoTile(id) {
+        const tile = document.getElementById(`tile-${id}`);
+        if (tile) tile.remove();
+        if (currentSpotlightId === id) {
+            currentSpotlightId = null;
+            document.getElementById('spotlight-area').classList.remove('active');
+            document.getElementById('video-grid').classList.remove('has-spotlight');
+        }
+        updateOthersTileSize();
+    }
+
+    // Rétrécit les vignettes des joueurs non actifs à mesure qu'ils sont nombreux,
+    // pour que tout tienne à l'écran sans avoir à scroller pendant la partie.
+    function updateOthersTileSize() {
+        const grid = document.getElementById('video-grid');
+        const count = grid.querySelectorAll('.video-tile').length;
+        let minSize = 120;
+        if (count >= 7) minSize = 55;
+        else if (count >= 5) minSize = 70;
+        else if (count >= 3) minSize = 90;
+        grid.style.setProperty('--tile-min', `${minSize}px`);
+    }
+
+    let currentSpotlightId = null;
+
+    function setSpotlightPlayer(peerId) {
+        const spotlightArea = document.getElementById('spotlight-area');
+        const grid = document.getElementById('video-grid');
+
+        if (currentSpotlightId === peerId) return;
+
+        // On remet l'ancienne tuile "en avant" dans la grille normale
+        if (currentSpotlightId) {
+            const prevTile = document.getElementById(`tile-${currentSpotlightId}`);
+            if (prevTile) grid.appendChild(prevTile);
+        }
+
+        currentSpotlightId = peerId;
+
+        if (!peerId) {
+            spotlightArea.classList.remove('active');
+            grid.classList.remove('has-spotlight');
+            updateOthersTileSize();
+            return;
+        }
+
+        const tile = document.getElementById(`tile-${peerId}`);
+        if (tile) {
+            spotlightArea.innerHTML = '';
+            spotlightArea.appendChild(tile);
+            spotlightArea.classList.add('active');
+            grid.classList.add('has-spotlight');
+        }
+        updateOthersTileSize();
+    }
+
+    // --- CONTRÔLES MICRO / CAMÉRA ---
+    function toggleMic() {
+        if (!localStream) return;
+        micOn = !micOn;
+        localStream.getAudioTracks().forEach(t => t.enabled = micOn);
+        const btn = document.getElementById('toggle-mic-btn');
+        btn.classList.toggle('off', !micOn);
+        btn.innerText = micOn ? '🎤' : '🔇';
+    }
+
+    function toggleCam() {
+        if (!localStream) return;
+        camOn = !camOn;
+        localStream.getVideoTracks().forEach(t => t.enabled = camOn);
+        const btn = document.getElementById('toggle-cam-btn');
+        btn.classList.toggle('off', !camOn);
+        btn.innerText = camOn ? '📹' : '🚫';
+    }
+
+    // --- QUITTER LE SALON ---
+    function leaveRoom() {
+        if (channel) {
+            channel.untrack();
+            supabaseClient.removeChannel(channel);
+            channel = null;
+        }
+        Object.keys(peerConnections).forEach(closePeerConnection);
+
+        if (localStream) {
+            localStream.getTracks().forEach(t => t.stop());
+            localStream = null;
+        }
+
+        resetGameState();
+        document.getElementById('video-grid').innerHTML = '';
+        document.getElementById('spotlight-area').innerHTML = '';
+        showScreen('entry-screen');
+        backToEntryChoice();
+        setStatus('create-status', '', null);
+        setStatus('join-status', '', null);
+    }
+
+    // ================================================================
+    // PARTIE — synchronisation de l'état de jeu via le même canal Supabase
+    // ================================================================
+
+    // Base de mots complète du jeu Rush'Up! original (25 thèmes, ~2450 mots).
+    const WORD_DATABASE = {
+gen_easy: ["Bouteille", "Soleil", "Voiture", "Maison", "Fleur", "Chien", "Chat", "Livre", "Arbre", "Chaise", "Table", "Téléphone", "Pomme", "Pain", "Vélo", "Crayon", "Gâteau", "Télévision", "Lit", "Porte", "Fenêtre", "Poisson", "Oiseau", "Plage", "Neige", "Pluie", "Chapeau", "Chaussure", "Lait", "Chocolat", "Pizza", "Glace", "Horloge", "Miroir", "Brosse à dents", "Savon", "Manteau", "Balançoire", "Balle", "Sable", "Mer", "Lune", "Étoile", "Nuage", "Avion", "Bateau", "Train", "Sifflet", "Lampe", "Sac à dos", "Casquette", "Lunettes", "Guitare", "Piano", "Baignoire", "Tasse", "Cuillère", "Fourchette", "Assiette", "Serviette", "Verre", "Pyjama", "Chaussette", "Ciseaux", "Papier", "Cadeau", "Sac", "Trottinette", "Arrosage", "Canard", "Lapin", "Vache", "Cochon", "Cheval", "Mouton", "Poule", "Coq", "Pigeon", "Grenouille", "Tortue", "Singe", "Lion", "Éléphant", "Girafe", "Ours", "Panda", "Dauphin", "Baleine", "Requin", "Fraise", "Banane", "Orange", "Citron", "Tomate", "Carotte", "Fromage", "Beurre", "Sucre"],
+            gen_medium: ["Labyrinthe", "Avalanche", "Eclipse", "Sismographe", "Boussole", "Grotte", "Sous-marin", "Microscope", "Télescope", "Cascade", "Phares", "Caméléon", "Astéroïde", "Symphonie", "Brouillard", "Tornade", "Sable mouvant", "Cathédrale", "Pyramide", "Sablier", "Caravane", "Télécommande", "Sèche-cheveux", "Tondeuse", "Ventilateur", "Aspirateur", "Grille-pain", "Cafetière", "Micro-ondes", "Réveil", "Thermomètre", "Baromètre", "Escrime", "Escalade", "Tir à l'arc", "Plongée", "Équitation", "Skateboard", "Ping-pong", "Badminton", "Marathon", "Kayak", "Snowboard", "Surf", "Hélicoptère", "Montgolfière", "Sous-marin", "Fusée", "Satellite", "Gare", "Aéroport", "Bibliothèque", "Musée", "Cinéma", "Théâtre", "Opéra", "Stade", "Patinoire", "Piscine", "Zoo", "Cirque", "Patisserie", "Boulangerie", "Boucherie", "Pharmacie", "Hôpital", "Commissariat", "Poste", "Mairie", "Château", "Forteresse", "Donjon", "Phare", "Moulin", "Pont", "Tunnel", "Barrage", "Port", "Frontière", "Capital", "Continent", "Île", "Presqu'île", "Volcan", "Cratère", "Geyser", "Glacier", "Iceberg", "Désert", "Oasis", "Jungle", "Savane", "Toundra", "Récif", "Lagon", "Archipel", "Canyon", "Vallée"],
+            gen_hard: ["Procrastination", "Anachronisme", "Alchimie", "Pharaon", "Calligraphie", "Sarcophage", "Pérégrination", "Hypothèse", "Métempsycose", "Cryptographie", "Amphithéâtre", "Metamorphose", "Cartographie", "Archeologie", "Paleontologie", "Philosophie", "Anthropologie", "Météorologie", "Chronologie", "Généalogie", "Mythologie", "Astrologie", "Astronomique", "Anatomie", "Sismologie", "Volcanologie", "Théorie", "Axiome", "Paradoxe", "Ouroboros", "Labyrinthe", "Minotaure", "Centaure", "Gorgone", "Sphinx", "Salamandre", "Phénix", "Gargouille", "Catacombes", "Mausolée", "Obélisque", "Parthénon", "Colisée", "Acropole", "Nécropole", "Herméneutique", "Épistémologie", "Rétrospective", "Perspicacité", "Bienveillance", "Magnanimité", "Altruisme", "Empirisme", "Pragmatisme", "Scepticisme", "Stoïcisme", "Épicurisme", "Syllogisme", "Rhétorique", "Éloquence", "Sophisme", "Allégorie", "Metaphore", "Hyperbole", "Oxymore", "Litote", "Périphrase", "Euphémisme", "Onomatopée", "Pléonasme", "Anagramme", "Palindrom", "Acrostiche", "Sonnets", "Alexandrin", "Calligramme", "Soliloque", "Monologue", "Tirade", "Quiproquo", "Intrigue", "Péripétie", "Dénouement", "Prologues", "Épilogue", "Catharsis", "Dramaturge", "Scénographe", "Chorégraphe", "Chef d'orchestre", "Virtuose", "Mécène", "Philanthrope", "Polyglotte", "Autodidacte", "Érudit", "Visionnaire", "Précurseur"],
+            kids: ["Chat", "Chien", "Vache", "Cochon", "Lion", "Éléphant", "Singe", "Canard", "Oiseau", "Poisson", "Banane", "Pomme", "Gâteau", "Glace", "Pizza", "Pain", "Lait", "Chocolat", "Fraise", "Carotte", "Voiture", "Vélo", "Train", "Avion", "Bateau", "Fusée", "Camion de pompiers", "Tracteur", "Bus", "Moto", "Lit", "Chaise", "Table", "Télévision", "Brosse à dents", "Maison", "Soleil", "Pluie", "Neige", "Nuage", "Ballon", "Poupée", "Livre", "Crayon", "Ciseaux", "Chapeau", "Chaussure", "Manteau", "Toboggan", "Balançoire", "Girafe", "Ours", "Lapin", "Grenouille", "Tortue", "Papillon", "Abeille", "Dauphin", "Cheval", "Mouton", "Sucette", "Bonbon", "Jus d'orange", "Cuillère", "Fourchette", "Assiette", "Verre", "Serviette", "Pyjama", "Chaussette", "Fleur", "Arbre", "Lune", "Étoile", "Mer", "Sable", "Coquillage", "Château de sable", "Bonhomme de neige", "Cadeau", "Doudou", "Tétine", "Biberon", "Pinceau", "Peinture", "Tambour", "Trompette", "Guitare", "Horloge", "Miroir", "Savon", "Baignoire", "Peigne", "Sac à dos", "Trottinette", "Cartable", "Casquette", "Lunettes", "Balle", "Lego"],
+            family: ["Pompier", "Boulanger", "Médecin", "Astronaute", "Jardinier", "Policier", "Cuisinier", "Professeur", "Vétérinaire", "Coiffeur", "Supermarché", "Boulangerie", "Piscine", "Aéroport", "Cinéma", "Bibliothèque", "Zoo", "Plage", "Musée", "Gare", "Téléphone", "Grille-pain", "Aspirateur", "Machine à laver", "Parapluie", "Valise", "Réveil", "Casque d'écoute", "Télécommande", "Ventilateur", "Peur", "Colère", "Joie", "Sommeil", "Faim", "Course à pied", "Danse", "Jardinage", "Bricolage", "Pêche", "Château fort", "Tour Eiffel", "Fusée spatiale", "Sous-marin", "Grotte", "Montagne", "Désert", "Volcan", "Île déserte", "Forêt", "Sifflet", "Lampe de poche", "Loupe", "Boussole", "Gourde", "Sac de couchage", "Tente", "Feu de camp", "Pique-nique", "Gâteau d'anniversaire", "Dentiste", "Plombier", "Facteur", "Pilote", "Détective", "Architecte", "Comédien", "Photographe", "Électricien", "Mécanicien", "Gare routière", "Port de pêche", "Hôpital", "Stade de foot", "Parc d'attractions", "Patinoire", "Ferme", "Chantier", "Poste", "Mairie", "Micro-ondes", "Sèche-cheveux", "Tondeuse à gazon", "Fer à repasser", "Cafetière", "Lave-vaisselle", "Imprimante", "Clavier", "Balance", "Thermomètre", "Escrime", "Escalade", "Tir à l'arc", "Plongée", "Équitation", "Skateboard", "Roller", "Ping-pong", "Badminton", "Yoga"],
+            harrypotter: ["Harry Potter", "Ron Weasley", "Hermione Granger", "Albus Dumbledore", "Voldemort", "Severus Rogue", "Hagrid", "Sirius Black", "Drago Malefoy", "Dobby", "Neville Londubat", "Bellatrix Lestrange", "Minerva McGonagall", "Remus Lupin", "Fred Weasley", "George Weasley", "Ginny Weasley", "Lucius Malfoy", "Dolores Ombrage", "Luna Lovegood", "Cedric Diggory", "Peter Pettigrow", "Gellert Grindelwald", "Cho Chang", "Poudlard", "Voie 9 3/4", "Pré-au-Lard", "Chambre des Secrets", "Forêt Interdite", "Le Chaudron Baveur", "Chemin de Traverse", "Azkaban", "Baguette de Sureau", "Choixpeau magique", "Nimbus 2000", "Carte du Maraudeur", "Retourneur de temps", "Vif d'or", "Souaffle", "Cognard", "Cape d'invisibilité", "Potion de Polynectar", "Pensine", "Miroir du Riséd", "Pierre Philosophale", "Médaillon de Serpentard", "Diadème de Serdaigle", "Coupe de Poufsouffle", "Expecto Patronum", "Avada Kedavra", "Wingardium Leviosa", "Lumos", "Alohomora", "Expelliarmus", "Crucio", "Imperio", "Sectumsempra", "Accio", "Hippogriffe", "Sombral", "Basilic", "Aragog", "Phénix", "Loup-garou", "Détraqueur", "Niffleur", "Botruc", "Mangemort", "Gryffondor", "Serpentard", "Serdaigle", "Poufsouffle", "Tournoi des Trois Sorciers", "Bal des Yule", "Armée de Dumbledore", "Ordre du Phénix", "Bière au beurre", "Chocogrenouille", "Dragées Surprises de Bertie Crochue", "Gazette du Sorcier", "Bus Magique", "Robe de sorcier", "Chouette Edwige", "Croûtard", "Pattesmol", "Éclair de Feu", "Encrier", "Parchemin", "Feudeymon", "Sortilège du Fidelius", "Poudre de Cheminette", "Mers de Poudlard", "Saule Cogneur", "Cabane de Hagrid", "Salle sur Demande", "Tour d'Astronomie", "Arithmancie", "Botanique", "Métamorphose"],
+            marvel: ["Iron Man", "Spider-Man", "Captain America", "Thor", "Hulk", "Black Widow", "Hawkeye", "Doctor Strange", "Black Panther", "Ant-Man", "Groot", "Rocket Raccoon", "Star-Lord", "Deadpool", "Thanos", "Loki", "Green Goblin", "Venom", "Red Skull", "Ultron", "Mysterio", "Captain Marvel", "Wasp", "Falcon", "Winter Soldier", "Vision", "Wanda Maximoff", "Quicksilver", "Gamora", "Drax", "Nebula", "Mantis", "Nick Fury", "Phil Coulson", "Pepper Potts", "Happy Hogan", "Daredevil", "Punisher", "Jessica Jones", "Luke Cage", "Bouclier de Captain America", "Mjolnir", "Stormbreaker", "Gant de l'Infini", "Costume de Spider-Man", "Réacteur Arc", "Oeil de Agamotto", "Web Shooter", "Wakanda", "Asgard", "Tour des Avengers", "Kamar-Taj", "Quantum Realm", "Knowhere", "Sokovie", "Xandar", "Titan", "Helicarrier", "Pierre de l'Espace", "Pierre de l'Esprit", "Pierre du Pouvoir", "Pierre du Temps", "Pierre de la Réalité", "Pierre de l'Âme", "Vibranium", "Adamantium", "J.A.R.V.I.S.", "F.R.I.D.A.Y.", "S.H.I.E.L.D.", "H.Y.D.R.A.", "Les Ravageurs", "Guardians of the Galaxy", "Avengers", "Eternals", "Inhumans", "X-Men", "Wolverine", "Professeur X", "Magneto", "Jean Grey", "Cyclope", "Tornade", "Rogue", "Beast", "Mystique", "Nightcrawler", "Gambit", "Silver Surfer", "Galactus", "Doctor Doom", "Kingpin", "Electro", "Doc Ock", "Sandman", "Lizard", "Vulture"],
+            disney: ["Mickey Mouse", "Donald Duck", "Dingo", "Simba", "Mufasa", "Scar", "Aladdin", "Le Génie", "Jafar", "Cendrillon", "Blanche-Neige", "Ariel", "La Bête", "Belle", "Mulan", "Pocahontas", "Elsa", "Anna", "Olaf", "Vaiana", "Maui", "Mirabel Encanto", "Stitch", "Rapunzel", "Flynn Rider", "Woody", "Buzz l'Éclair", "Flash McQueen", "Nemo", "Dory", "Remy Ratatouille", "Wall-E", "Mr. Indestructible", "Kuzco", "Hercules", "Tarzan", "Mowgli", "Baloo", "Robin des Bois", "Peter Pan", "Capitaine Crochet", "Fée Clochette", "Pinocchio", "Bambi", "Dumbo", "Maléfique", "Cruella de Vil", "Ursula", "Hades", "Gaston", "La Lampe magique", "La Pomme empoisonnée", "La Pantoufle de verre", "La Rose enchantée", "Tapis volant", "Château de la Belle au Bois Dormant", "Miroir magique", "Chariot de Cendrillon", "Raiponce", "Tiana", "Mère Gothel", "Pascal", "Sven", "Kristoff", "Baymax", "Joy", "Sadness", "Bing Bong", "Carl Fredricksen", "Russell", "Dug", "Miguel", "Hector", "Jack Skellington", "Sally", "Oogie Boogie", "Meeko", "Flounder", "Sébastien", "Lumière", "Big Ben", "Mme Samovar", "Zip", "Aladar", "Arlo", "Luca", "Alberto", "Mei Panda Rouge", "Judy Hopps", "Nick Wilde", "Chef Bogo", "Flash le paresseux", "Fix-It Felix", "Wreck-It Ralph", "Penelope von Schweetz", "Kida", "Milo Thatch"],
+            starwars: ["Luke Skywalker", "Darth Vader", "Princesse Leia", "Han Solo", "Chewbacca", "Yoda", "Obi-Wan Kenobi", "Lando Calrissian", "Empereur Palpatine", "Boba Fett", "Rey", "Finn", "Kylo Ren", "Grogu", "Le Mandalorien", "Ahsoka Tano", "Poe Dameron", "Mace Windu", "Count Dooku", "General Grievous", "Darth Maul", "Qui-Gon Jinn", "Anakin Skywalker", "Padmé Amidala", "Grand Moff Tarkin", "Jabba le Hutt", "Captain Phasma", "Cassian Andor", "Jyn Erso", "K-2SO", "Sabre laser bleu", "Sabre laser rouge", "Sabre laser vert", "Étoile de la Mort", "Faucon Millenium", "X-Wing", "TIE Fighter", "Blaster", "Détonateur thermique", "Baton de Rey", "Tatooine", "Endor", "Hoth", "Coruscant", "Dagobah", "Mustafar", "Jakku", "Naboo", "Kamino", "Geonosis", "La Force", "Côté Obscur", "R2-D2", "C-3PO", "BB-8", "Stormtrooper", "Clonetrooper", "Ewok", "Wookiee", "Jawa", "Sandcrawler", "AT-AT", "AT-ST", "Speeder Bike", "Star Destroyer", "Holocron", "Code Jedi", "Ordre 66", "Conseil Jedi", "Académie Sith", "Bacta Tank", "Boba Fett Helmet", "Beskar", "Darksaber", "Slave I", "Razor Crest", "TIE Interceptor", "A-Wing", "Y-Wing", "Super Star Destroyer", "Sarlacc", "Bantha", "Tauntaun", "Wampa", "Rodien", "Twi'lek", "Gungan", "Jar Jar Binks", "Sebulba", "Watto", "Darth Plagueis"],
+            pokemon: ["Pikachu", "Dracaufeu", "Carapuce", "Bulbizarre", "Evoli", "Mewtwo", "Lucario", "Amphinobi", "Mew", "Ectoplasma", "Rondoudou", "Ronflex", "Lugia", "Rayquaza", "Pokéball", "Sacha", "Ondine", "Pierre", "Régis", "Professeur Chen", "Team Rocket", "Jessie & James", "Miaouss", "Centre Pokémon", "Pokedex", "Pierre Stase", "Super Bonbon", "Master Ball", "Méga-Évolution", "Arène Pokémon", "Badges Pokémon", "Ligue Pokémon", "Type Feu", "Type Eau", "Type Électrik", "Salamèche", "Tiplouf", "Tortipouss", "Ouisticram", "Pichu", "Raikou", "Entei", "Suicune", "Dialga", "Palkia", "Giratina", "Arceus", "Zoroark", "Zekrom", "Reshiram", "Grenousse", "Flambusard", "Chelours", "Togepi", "Psykokwak", "Magicarpe", "Léviator", "Métamorph", "Insécateur", "Rhinocorne", "Élector", "Sulfura", "Artikodin", "Électrode", "Smogogo", "Abo", "Nidoran", "Goupix", "Caninos", "Arcanin", "Alakazam", "Mackogneur", "Triopikeur", "Qulbutoké", "Cadoizo", "Queulorior", "Porygon", "Corayon", "Celebi", "Latios", "Latias", "Kyogre", "Groudon", "Deoxys", "Carchacrok", "Darkrai", "Shaymin", "Gueriaugle", "Zygarde", "Zeraora", "Corvaillus", "Pohm", "Mireidon", "Koraidon", "Minidraco", "Dracolosse", "Pikachu Catcheur", "Potion", "Rappel"],
+            manga: ["Goku", "Vegeta", "Naruto Uzumaki", "Sasuke Uchiha", "Luffy", "Zoro", "Saitama", "Livaï Ackerman", "Eren Jaeger", "Tanjiro Kamado", "Nezuko", "Gojo Satoru", "Sukuna", "Light Yagami", "L (Death Note)", "Ryuk", "Edward Elric", "Alphonse Elric", "All Might", "Deku (Izuku)", "Gon Freecss", "Killua", "Hisoka", "Ichigo Kurosaki", "Seiya", "Ken le Survivant", "Kenshin", "Spike Spiegel", "Sailor Moon", "Kuroko", "Hinata Shoyo", "Kageyama", "Natsu Dragnir", "Lucy Heartfilia", "Rengoku", "Kakashi Hatake", "Itachi Uchiha", "Piccolo", "Gohan", "Freezer", "Cell", "Majin Buu", "Dragon Balls", "Kamehameha", "Chidori", "Rasengan", "Fruit du Démon", "Titan Cuirassé", "Titan Colossal", "Shingeki no Kyojin", "One Piece", "Dragon Ball Z", "Naruto Shippuden", "Demon Slayer", "Jujutsu Kaisen", "My Hero Academia", "Hunter x Hunter", "Fullmetal Alchemist", "Bleach", "Tokyo Ghoul", "Chainsaw Man", "Denji", "Power", "Makima", "Anya Forger", "Loid Forger", "Spy x Family", "Punch Man", "Death Note", "Saint Seiya", "Fairy Tail", "JoJo's Bizarre Adventure", "Jotaro Kujo", "DIO", "Kagura", "Gintoki", "Gintama", "Shoto Todoroki", "Bakugo", "Baki", "Kengan Ashura", "Hajime no Ippo", "Slam Dunk", "Haikyuu!!", "Blue Lock", "Isagi Yoichi", "Dr. Stone", "Senku", "Berserk", "Guts", "Griffith", "Vinland Saga", "Thorfinn", "Sanji", "Chopper", "Nami", "Megumi Fushiguro", "Nobara Kugisaki"],
+            series: ["Stranger Things", "Game of Thrones", "La Casa de Papel", "Friends", "Breaking Bad", "The Walking Dead", "Peaky Blinders", "Squid Game", "Wednesday (Mercredi)", "The Crown", "Black Mirror", "The Witcher", "The Office", "How I Met Your Mother", "The Big Bang Theory", "Grey's Anatomy", "Lucifer", "Prison Break", "Lost", "Desperate Housewives", "Sex and the City", "Gossip Girl", "Euphoria", "Élite", "Narcos", "Dark", "Better Call Saul", "Succession", "The Boys", "The Mandalorian", "Ted Lasso", "Sherlock", "Lupin", "Dix Pour Cent", "Kaamelott", "Jon Snow", "Daenerys Targaryen", "Walter White", "Jesse Pinkman", "Thomas Shelby", "Eleven (Onze)", "Hopper", "Le Professeur (Casa de Papel)", "Tokyo", "Berlin", "Rachel Green", "Joey Tribbiani", "Chandler Bing", "Sheldon Cooper", "Michael Scott", "Dwight Schrute", "Meredith Grey", "Rick Grimes", "Daryl Dixon", "Geralt de Rive", "Mercredi Addams", "Loki (Série)", "Hawkeye", "WandaVision", "The Last of Us", "Joel", "Ellie", "Bridgerton", "Emily in Paris", "Sons of Anarchy", "Vikings", "Ragnar Lothbrok", "Dexter", "House of the Dragon", "Yellowstone", "Fleabag", "Westworld", "American Horror Story", "Riverdale", "13 Reasons Why", "You", "Joe Goldberg", "The Good Place", "Brooklyn Nine-Nine", "Jake Peralta", "Parks and Recreation", "Soprano (Série)", "Mad Men", "Modern Family", "Supernatural", "The 100", "Smallville", "Glee", "Buffy contre les Vampires", "Charmed", "X-Files", "Twin Peaks", "The White Lotus", "Bear (The Bear)", "Shogun", "Chernobyl", "Severance", "Ozark"],
+            gaming: ["Mario", "Luigi", "Princesse Peach", "Bowser", "Yoshi", "Link", "Zelda", "Ganondorf", "Pikachu", "Kirby", "Donkey Kong", "Sonic", "Kratos", "Atreus", "Master Chief", "Lara Croft", "Nathan Drake", "Joel (TLOU)", "Ellie", "Arthur Morgan", "Geralt de Rive", "Cloud Strife", "Sephiroth", "Crash Bandicoot", "Spyro", "Rayman", "Pac-Man", "Tetris", "Minecraft", "Steve", "Creeper", "Fortnite", "Battle Royale", "GTA V", "Trevor Philips", "League of Legends", "Faker", "Counter-Strike", "Valorant", "Overwatch", "Tracer", "World of Warcraft", "Thrall", "Arthas", "Call of Duty", "FIFA / EA FC", "NBA 2K", "Rocket League", "Apex Legends", "PUBG", "Roblox", "Among Us", "Fall Guys", "Animal Crossing", "Tom Nook", "Zelda Breath of the Wild", "Super Smash Bros", "Mario Kart", "Carapace Bleue", "Game Boy", "PlayStation", "Xbox", "Nintendo Switch", "PC Master Race", "Console", "Manette", "Casque Gamer", "Streamer", "Twitch", "Esport", "Game Over", "Level Up", "Easter Egg", "Pixel", "Elden Ring", "Sans-Éclat", "Dark Souls", "Skyrim", "Dovahkiin", "Cyberpunk 2077", "The Witcher 3", "Red Dead Redemption 2", "Assassin's Creed", "Ezio Auditore", "Far Cry", "Resident Evil", "Leon S. Kennedy", "Silent Hill", "God of War", "Uncharted", "Horizon Zero Dawn", "Aloy", "Hollow Knight", "Hades", "Undertale", "Sans", "Portal", "GLaDOS", "Half-Life", "Gordon Freeman", "Doom Slayer"],
+            dc: ["Batman", "Bruce Wayne", "Superman", "Clark Kent", "Wonder Woman", "Flash", "Aquaman", "Cyborg", "Green Lantern", "Martian Manhunter", "Shazam", "Green Arrow", "Nightwing", "Batgirl", "Robin", "Supergirl", "Joker", "Harley Quinn", "Bane", "Catwoman", "Penguin (Le Pingouin)", "Riddler (L'Homme Mystère)", "Two-Face (Double-Face)", "Poison Ivy", "Mr. Freeze", "Scarecrow (L'Épouvantail)", "Ra's al Ghul", "Talia al Ghul", "Deathstroke", "Darkseid", "Lex Luthor", "General Zod", "Brainiac", "Doomsday", "Black Adam", "Sinestro", "Reverse-Flash", "Ocean Master", "Gotham City", "Metropolis", "Arkham Asylum", "Batcave", "Batmobile", "Bat-Signal", "Batarang", "Lasso de Vérité", "Kryptonite", "Daily Planet", "Justice League", "Suicide Squad", "Teen Titans", "Watchmen", "Dr. Manhattan", "Rorschach", "V for Vendetta", "Sandman", "Lucifer Morningstar", "Constantine", "Swamp Thing", "Peacemaker", "Alfred Pennyworth", "Commissioner Gordon", "Lois Lane", "Jor-El", "Zack Snyder's Justice League", "The Dark Knight", "Joaquin Phoenix Joker", "Robert Pattinson Batman", "Hawkman", "Hawkgirl", "Atom", "Firestorm", "Doctor Fate", "Zatanna", "Superboy", "Red Hood", "Damian Wayne", "Batwoman", "Solomon Grundy", "Killer Croc", "Clayface", "Man-Bat", "Deadshot", "King Shark", "Polka-Dot Man", "Starfire", "Raven", "Beast Boy", "Cyborg Titans", "Black Canary", "Huntress", "Vixen", "Star Sapphire", "Gorilla Grodd", "Metallo", "Parasite"],
+            history: ["Napoléon Bonaparte", "Cléopâtre", "Jules César", "Alexandre le Great", "Jeanne d'Arc", "Louis XIV", "Marie-Antoinette", "Charlemagne", "Vercingétorix", "Léonard de Vinci", "Albert Einstein", "Isaac Newton", "Galileo", "Christophe Colomb", "Marco Polo", "Abraham Lincoln", "George Washington", "Winston Churchill", "Charles de Gaulle", "Nelson Mandela", "Mahatma Gandhi", "Martin Luther King", "Rosa Parks", "Gengis Khan", "Attila le Hun", "Ramsès II", "Toutânkhamon", "Révolution Française", "Prise de la Bastille", "Moyen Âge", "Renaissance", "Empire Romain", "Égypte Antique", "Seconde Guerre Mondiale", "Débarquement de Normandie", "Guerre Froide", "Chute du Mur de Berlin", "Course à l'Espace", "Proclamation d'Indépendance", "Code de Hammurabi", "Pyramides", "Château de Versailles", "Gladiateur", "Chevalier", "Samouraï", "Pharaon", "Empereur", "Roi Soleil", "Guillotine", "Drapeau Tricolore", "Premier Pas sur la Lune", "Abolition de l'Esclavage", "Traité de Versailles", "Bataille de Waterloo", "Bataille de Marignan", "Henri IV", "Louis XVI", "Jhen d'Arc", "Victor Hugo", "Voltaire", "Rousseau", "Molière", "Marie Curie", "Pasteur", "Charles Darwin", "Aristote", "Platon", "Socrate", "Archimède", "Périclès", "Spartacus", "Catherine II de Russie", "Pierre le Grand", "Elizabeth Ier", "Reine Victoria", "Thomas Edison", "Nikola Tesla", "Frères Wright", "Gutenberg", "Impression de la Bible", "Syllabe Punique", "Guerre de Cent Ans", "Guerre de Sécession", "Révolution Industrielle", "Mai 68", "Front Populaire", "Appel du 18 Juin", "Résistance Française", "Jean Moulin", "Simone Veil", "Drapeau Européen", "Chute de Constantinople", "Découverte de l'Amérique", "Pompéi", "Vésuve"],
+            geo: ["Paris", "Londres", "Tokyo", "New York", "Rome", "Washington D.C.", "Pékin", "Canberra", "Brasilia", "Ottawa", "Madrid", "Berlin", "Athènes", "Le Caire", "Buenos Aires", "Bangkok", "Marrakech", "Venise", "Sydney", "Capitole", "Tour Eiffel", "Statue de la Liberté", "Grande Muraille de Chine", "Pyramides de Gizeh", "Colisée de Rome", "Taj Mahal", "Machu Picchu", "Pétra", "Christ Rédempteur", "Big Ben", "Mont Fuji", "Grand Canyon", "Chutes du Niagara", "Mont Everest", "Burj Khalifa", "Sagrada Familia", "Mont Saint-Michel", "Le Nil", "L'Amazone", "Le Mississippi", "Le Danube", "Océan Pacifique", "Océan Atlantique", "Mer Méditerranée", "Désert du Sahara", "Forêt Amazonienne", "Pôle Nord", "Antarctique", "Aurore Boréale", "Péninsule Ibérique", "Les Alpes", "Les Himalayas", "Bassin Parisien", "Récif de la Grande Barrière", "Islande", "Groenland", "Madagascar", "Australie", "Nouvelle-Zélande", "Hawaï", "Mont Blanc", "Kilimanjaro", "Mont McKinley", "Lac Baïkal", "Mer Rouge", "Mer Noire", "Canal de Panama", "Canal de Suez", "Détroit de Gibraltar", "San Francisco", "Los Angeles", "Las Vegas", "Rio de Janeiro", "Moscou", "Istanbul", "Dubaï", "Séoul", "Singapour", "Hong Kong", "Bombay / Mumbai", "Copenhague", "Stockholm", "Amsterdam", "Vienne", "Lisbonne", "Dublin", "Bruxelles", "Reykjavik", "Pôle Sud", "Equateur (Ligne)", "Tropique du Cancer", "Cap de Bonne-Espérance", "Everest", "Fosse des Mariannes", "Île de Pâques", "Galapagos", "Bermudes (Triangle)", "Vatican"],
+            science: ["Système Solaire", "Soleil", "Lune", "Mars", "Jupiter", "Saturne", "Trou Noir", "Voie Lactée", "Galaxie", "Supernova", "Big Bang", "Pesanteur / Gravité", "Oxygène", "Hydrogène", "Atome", "Molécule", "ADN", "Cellule", "Corps Humain", "Cœur", "Cerveau", "Squelette", "Muscle", "Microscope", "Telescope", "Électricité", "Énergie Solaire", "Volcan", "Séisme / Tremblement de terre", "Tsunami", "Tornade", "Dinosaure", "Tyrannosaure", "Baleine Bleue", "Lion", "Aigle", "Loup", "Requin Blanc", "Chimpanzé", "Panda", "Biodiversité", "Photosynthèse", "Gravité", "Vitesse de la Lumière", "Théorie de la Relativité", "Vaccin", "Pénicilline", "Robotique", "Intelligence Artificielle", "Fusée Spatiale", "Station Spatiale Internationale", "Terre", "Vénus", "Mercure", "Uranus", "Neptune", "Pluton", "Comète", "Astéroïde", "Éclipse Solaire", "Atmosphère", "Couche d'Ozone", "Changement Climatique", "Énergie Nucléaire", "Énergie Éolienne", "Neutron", "Proton", "Électron", "Tableau Périodique", "Carbone", "Azote", "Eau (H2O)", "Gène", "Chromosome", "Bactérie", "Virus", "Système Immunitaire", "Poumons", "Estomac", "Foie", "Reins", "Peau", "Neurone", "Fossile", "Mammouth", "Biodiversité Marine", "Récif Corallien", "Écosystème", "Symbiose", "Onde Électromagnétique", "Laser", "Fibre Optique", "Imprimante 3D", "Droniste / Drone", "Algorithme", "Physique Quantique", "Nanotechnologie", "Clone"],
+            retro: ["Walkman", "Cassette Audio", "VHS", "Disquette 3.5 pouces", "Téléphone à Cadran", "Minitel", "Tamagotchi", "Game Boy", "Pogs", "Yoyo", "Rollers en Ligne", "Pin's", "K-Way", "Diddl", "Nokia 3310", "MSN Messenger", "Skyblog", "Cd-Rom", "Lecteur MP3", "Club Dorothée", "Les Minikeums", "Pokémon (Génération 1)", "Tetris", "Pac-Man", "Rubik's Cube", "Walkman Sony", "Fluo", "Jupe en Jean", "Casquette Hélix", "Les Incollables", "Pif Gadget", "Journal de Mickey", "Cannes à Pêche en Plastique", "Spice Girls", "2Be3", "Boys Band", "Nirvana", "Michael Jackson", "Britney Spears", "Daft Punk (Débuts)", "Manau", "Tragédie", "Lorie", "Génération Hit", "Top 50", "Furby", "Slinky", "Billes", "Saut à l'Élastique", "Diabolo", "Tetris Game Boy", "Super Nintendo", "Mega Drive", "PlayStation 1", "Sega", "Sonic le Hérisson", "Adibou", "L'Oncle Picsou", "Dragon Ball Z (Club Dorothée)", "Sailor Moon", "Les Entrechats", "Olive et Tom", "Inspecteur Gadget", "Bouli", "Les Bioman", "Power Rangers", "Téléphone Cabine", "Carte Téléphonique", "Encarta", "Caramail", "Kazaa", "eMule", "Moteur de Recherche Yahoo", "Appareil Photo Jetable", "Pellicule Photo", "Diapositive", "Proprojecteur diapo", "Giga Bleue", "Chewing-Gum Roll-Up", "Sucette Tétine", "Push Pop", "Coupes de Cheveux au Bol", "Jogging Kimono / Shine", "Pantalons Baggy", "Chaussures Buffalo", "Doc Martens", "Bandana", "Scoubidous", "Macho Man", "La Macarena", "La Danse des Canards", "Charly et Lulu", "Hit Machine", "Graines de Star", "Loft Story", "Jean-Pascal", "Star Academy 1"],
+            cinema: ["Hollywood", "Tapis Rouge", "Oscars", "César du Cinéma", "Festival de Cannes", "Réalisateur", "Acteur / Actrice", "Scénario", "Steven Spielberg", "George Lucas", "Quentin Tarantino", "Christopher Nolan", "Martin Scorsese", "Alfred Hitchcock", "James Cameron", "Leonardo DiCaprio", "Brad Pitt", "Tom Cruise", "Johnny Depp", "Robert De Niro", "Al Pacino", "Meryl Streep", "Scarlett Johansson", "Angelina Jolie", "Marion Cotillard", "Jean Dujardin", "Louis de Funès", "Titanic", "Avatar", "Star Wars", "Jurassic Park", "Inception", "Pulp Fiction", "Le Parrain", "Gladiator", "Matrix", "Harry Potter", "Le Seigneur des Anneaux", "Forrest Gump", "Retour vers le Futur", "Indiana Jones", "James Bond (007)", "Les Dents de la Mer", "Alien", "Terminator", "Psychose", "Fight Club", "Casablanca", "La La Land", "The Avengers", "Clint Eastwood", "Morgan Freeman", "Denzel Washington", "Tom Hanks", "Will Smith", "Keanu Reeves", "Harrison Ford", "Samuel L. Jackson", "Cate Blanchett", "Kate Winslet", "Emma Stone", "Natalie Portman", "Alain Delon", "Jean-Paul Belmondo", "Gérard Depardieu", "Omar Sy", "Catherine Deneuve", "Sophie Marceau", "Les Bronzés", "Le Fabuleux Destin d'Amélie Poulain", "La Grande Vadrouille", "Intouchables", "Astérix & Obélix : Mission Cléopâtre", "Les Visiteurs", "Taxi", "Le Cinquième Élément", "Léon", "Amadeus", "Schindler's List", "Braveheart", "Saving Private Ryan", "Interstellar", "Oppenheimer", "Barbie (Film)", "The Dark Knight", "Shrek", "Toy Story", "Le Roi Lion", "Sixième Sens", "The Truman Show", "La Ligne Verte", "Le Silence des Agneaux", "Seven", "Usual Suspects", "Scarface", "Chantons sous la pluie", "Psychose"],
+            people: ["YouTubeur", "Streamer", "Influenceur", "TikTok", "Instagram", "Twitch", "Squeezie", "Mcfly & Carlito", "Inoxtag", "Michou", "Lena Situations", "HugoDécrypte", "Amixem", "Norman", "Cyprien", "PewDiePie", "MrBeast", "Kim Kardashian", "Kylie Jenner", "Beyoncé", "Rihanna", "Taylor Swift", "Kanye West", "Drake", "Cristiano Ronaldo", "Lionel Messi", "Kylian Mbappé", "LeBron James", "Elon Musk", "Mark Zuckerberg", "Jeff Bezos", "Bill Gates", "Oprah Winfrey", "Dwayne Johnson (The Rock)", "Zendaya", "Timothée Chalamet", "Selena Gomez", "Ariana Grande", "Justin Bieber", "Dua Lipa", "Billie Eilish", "Aya Nakamura", "Jul", "Orelsan", "Stromae", "Paparazzi", "Tapis Rouge", "Met Gala", "Réseaux Sociaux", "Gérard Piqué", "Shakira", "David Beckham", "Victoria Beckham", "Paris Hilton", "Khloé Kardashian", "Kourtney Kardashian", "Kendall Jenner", "Travis Scott", "Bad Bunny", "Rosalía", "Post Malone", "Ed Sheeran", "Bruno Mars", "Katy Perry", "Lady Gaga", "Miley Cyrus", "Snoop Dogg", "Eminem", "50 Cent", "Jay-Z", "Will Smith", "Jada Pinkett", "Tom Holland", "Florence Pugh", "Sydney Sweeney", "Margot Robbie", "Ryan Gosling", "Keanu Reeves", "Pedro Pascal", "Bella Hadid", "Gigi Hadid", "Hailey Bieber", "Khaby Lame", "Charli D'Amelio", "Addison Rae", "Pokimane", "Kai Cenat", "IShowSpeed", "Rubius", "Ibai Llanos", "AuronPlay", "GP Explorer", "Kameto", "Gotaga", "ZeratoR", "Domingo", "JUIDefense"],
+            fashion: ["Chanel", "Louis Vuitton", "Gucci", "Dior", "Prada", "Hermès", "Versace", "Balenciaga", "Yves Saint Laurent", "Burberry", "Nike", "Adidas", "Puma", "Reebok", "New Balance", "Jordan (Sneakers)", "Converse", "Vans", "Air Force 1", "Stan Smith", "Zara", "H&M", "Uniqlo", "Levi's", "Calvin Klein", "Tommy Hilfiger", "Lacoste", "Supreme", "Off-White", "Vogue", "Fashion Week", "Défilé de Mode", "Mannequin / Top Model", "Haute Couture", "Haute Joaillerie", "Sac à Main", "Escarpins", "Baskets Cultes", "Costume Sur-Mesure", "Lunettes Ray-Ban", "Rolex", "Cartier", "Tiffany & Co.", "Logotype", "Savoir-Faire", "Soie", "Cuir", "Denim / Jean", "Streetwear", "Sapeur", "Givenchy", "Fendi", "Valentino", "Armani", "Dolce & Gabbana", "Bottega Veneta", "Alexander McQueen", "Moncler", "Jacquemus", "Jean Paul Gaultier", "Kenzo", "Stella McCartney", "Moschino", "Isabel Marant", "Karl Lagerfeld", "Coco Chanel", "Christian Dior", "Gianni Versace", "Virgil Abloh", "Anna Wintour", "Naomi Campbell", "Kate Moss", "Gisele Bündchen", "Cara Delevingne", "Bella Hadid", "Trench-Coat", "Smoking", "Petite Robe Noire", "T-Shirt Blanc", "Blouson en Cuir", "Casquette NY", "Chapeau Fedora", "Ceinture à Boucle", "Bijoux en Or", "Montre de Luxe", "Parfum Culte", "Maquillage", "Rouge à Lèvres", "Vernis à Ongles", "Robe de Mariée", "Noeuds Papillon", "Cravate en Soie", "Boina", "Tacones Louboutin", "Suela Roja", "Bolso Birkin", "Bolso 2.55", "Gafas de Sol Grandes"],
+            travel: ["France", "Italie", "Japon", "États-Unis", "Brésil", "Australie", "Égypte", "Canada", "Mexique", "Chine", "Inde", "Espagne", "Grèce", "Thaïlande", "Maroc", "Pérou", "Islande", "Norvège", "Afrique du Sud", "Argentine", "Paris", "Tokyo", "New York", "Rome", "Londres", "Rio de Janeiro", "Sydney", "Le Caire", "Pékin", "Bangkok", "Tour Eiffel", "Statue de la Liberté", "Grande Muraille de Chine", "Pyramides de Gizeh", "Colisée", "Taj Mahal", "Machu Picchu", "Christ Rédempteur", "Pétra", "Acropole d'Athènes", "Passeport", "Valise", "Boussole", "Carte du monde", "Avion", "Sac à dos", "Décalage horaire", "Souvenir", "Billet d'avion", "Appareil photo", "Bateau de croisière", "Hôtel", "Auberge de jeunesse", "Guide touristique", "Escale", "Douane", "Visa", "Monnaie étrangère", "Crème solaire", "Lunettes de soleil", "Gondole de Venise", "Safari", "Aurore boréale", "Plongée sous-marine", "Randonnée en montagne", "Volcano", "Plage de sable blanc", "Désert du Sahara", "Jungle amazonienne", "Fjord", "Allemagne", "Portugal", "Pays-Bas", "Suisse", "Suède", "Chili", "Colombie", "Vietnam", "Indonésie", "Nouvelle-Zélande", "Dubaï", "Istanbul", "Barcelone", "Venise", "Amsterdam", "Los Angeles", "Las Vegas", "San Francisco", "Montréal", "Kyoto", "Big Ben", "Mont Fuji", "Grand Canyon", "Chutes du Niagara", "Mont Everest", "Opéra de Sydney", "Burj Khalifa", "Sagrada Familia", "Mont Saint-Michel"],
+            food: ["Pizza", "Burger", "Sushi", "Pâtes Carbonara", "Paëlla", "Tacos", "Couscous", "Fondue Savoyarde", "Raclette", "Crêpe", "Croissant", "Baguette", "Macaron", "Gaufre", "Tiramisu", "Eclair au chocolat", "Tartiflette", "Boeuf Bourguignon", "Cassoulet", "Quiche Lorraine", "Fromage", "Chocolat", "Huile d'olive", "Ail", "Épices", "Piment", "Avocat", "Saumon", "Truffe", "Basilic", "Baguettes chinoises", "Poêle", "Four", "Casserole", "Chef cuisinier", "Menu", "Recette", "Tablier", "Fouet", "Rouleau à pâtisserie", "Guacamole", "Hummus", "Dim Sum", "Ramen", "Pad Thaï", "Kebab", "Fish and Chips", "Nems", "Falafel", "Curry", "Camembert", "Roquefort", "Mozzarella", "Parmesan", "Cheddar", "Gorgonzola", "Brie", "Reblochon", "Feta", "Emmental", "Profiteroles", "Crème brûlée", "Tarte Tatin", "Mousse au chocolat", "Mille-feuille", "Paris-Brest", "Panna Cotta", "Cheesecake", "Churros", "Donut", "Vin rouge", "Champagne", "Café Espresso", "Thé vert", "Jus de fruits", "Cocktail", "Limonade", "Cidre", "Bière", "Eau gazeuse", "Couteau de chef", "Planche à découper", "Spatule", "Tire-bouchon", "Décapsuleur", "Salière", "Poivrier", "Balance de cuisine", "Mixeur", "Cocotte-minute", "Saucisson", "Jambon de Bayonne", "Foie gras", "Huîtres", "Caviar", "Homard", "Crevettes", "Moules frites", "Escargots", "Soupe à l'oignon"],
+            music: ["Guitare", "Piano", "Batterie", "Violon", "Trompette", "Microphone", "Casque audio", "Saxophone", "Flûte", "Basse", "Rock", "Pop", "Rap", "Jazz", "Musique Classique", "Electro", "Reggae", "Heavy Metal", "Blues", "Funk", "Michael Jackson", "Beyoncé", "Freddie Mercury", "Celine Dion", "Eminem", "Daft Punk", "Mozart", "Beethoven", "The Beatles", "Elvis Presley", "Concert", "Festival", "Refrain", "Chorégraphie", "Disque d'or", "Studio d'enregistrement", "Partition", "Solfège", "Chef d'orchestre", "Comédie musicale", "Ampli", "Platine vinyle", "Enceinte Bluetooth", "Synthétiseur", "Harpe", "Ukulélé", "Accordéon", "Tambourin", "Xylophone", "Triangle", "Bob Marley", "David Bowie", "Madonna", "Rihanna", "Lady Gaga", "Coldplay", "Queen", "Rolling Stones", "AC/DC", "Nirvana", "Johnny Hallyday", "Edith Piaf", "Stromae", "Orelsan", "Angèle", "Bigflo et Oli", "Soprano", "Gims", "Jul", "Aya Nakamura", "Acoustique", "Playback", "DJ", "Chorale", "Opéra", "Symphonie", "Ballade", "Solo de guitare", "Beatbox", "Auto-Tune", "Acrobate de scène", "Coulisses", "Billet de concert", "Tournée mondiale", "Clip vidéo", "Bande originale", "Hymne", "Rhythm and blues", "Country", "Ska", "Batterie électronique", "Pédale d'effet", "Métronome", "Diapason", "Cordes de guitare", "Baguettes de batterie", "Pupitre", "Micro HF", "Table de mixage", "Console"],
+            sports: ["Football", "Basketball", "Tennis", "Natation", "Rugby", "Judo", "Athlétisme", "Cyclisme", "Formule 1", "Boxe", "Golf", "Gymnastique", "Handball", "Volleyball", "Ski alpin", "Snowboard", "Surfing", "Skateboarding", "Équitation", "Escrime", "Ballon", "Raquette", "Piscine", "Stade", "Maillot", "Médaille d'or", "Sifflet d'arbitre", "Chronomètre", "Ring", "Court de tennis", "Kylian Mbappé", "LeBron James", "Rafael Nadal", "Usain Bolt", "Teddy Riner", "Serena Williams", "Cristiano Ronaldo", "Lionel Messi", "Michael Jordan", "Roger Federer", "Jeux Olympiques", "Coupe du Monde", "Grand Chelem", "Carton rouge", "Tir au but", "Marathon", "Tour de France", "Super Bowl", "NBA Finals", "Gran Prix F1", "Crampons", "Gants de boxe", "Casque de vélo", "Protège-dents", "Kimono", "Combinaison de plongée", "Bâtons de ski", "Palmes", "Putter", "Arbitre", "Entraîneur", "Supporter", "Podium", "Hymne national", "Trophée", "Prolongations", "Mi-temps", "Penalty", "Hors-jeu", "Antoine Griezmann", "Zinedine Zidane", "Novak Djokovic", "Lewis Hamilton", "Stephen Curry", "Tyson Fury", "Conor McGregor", "Simone Biles", "Katie Ledecky", "Clarisse Agbegnenou", "Escalade", "Tiro con arco", "Bádminton", "Tenis de mesa", "Remo", "Piragüismo", "Waterpolo", "Baseball", "Football americano", "Hockey sobre hielo", "Línea de meta", "Salida nula", "Record mundial", "Dopaje", "Espíritu deportivo", "Fair-play", "Suplente", "Capitaine", "Vestuario", "Patrocinador"]
+    };
+
+    const THEME_GROUPS = {
+        general: { label: '🌐 Tout public', themes: ['gen_easy', 'gen_medium', 'gen_hard'] },
+        fam: { label: '👨‍👩‍👧‍👦 Famille & Enfants', themes: ['kids', 'family'] },
+        party: { label: '🎉 Spécial Soirée & Nostalgie', themes: ['retro', 'cinema', 'people', 'fashion'] },
+        hist: { label: '🏛️ Histoire, Géo & Découvertes', themes: ['history', 'geo', 'science'] },
+        cul: { label: '🌍 Voyages, Culture & Loisirs', themes: ['travel', 'food', 'music', 'sports'] },
+        lic: { label: '🎬 Univers & Pop Culture', themes: ['pokemon', 'manga', 'series', 'gaming', 'dc', 'harrypotter', 'marvel', 'disney', 'starwars'] }
+    };
+
+    const THEME_LABELS = {
+        gen_easy: 'Généraliste facile', gen_medium: 'Généraliste moyen', gen_hard: 'Généraliste difficile',
+        kids: "Rush'Up! Kids (Dès 4 ans)", family: "Rush'Up! Family (Dès 8 ans)",
+        retro: 'Génération 80 / 90 / 2000', cinema: 'Cinéma & Célébrités', people: 'Célébrités & Influenceurs', fashion: 'Mode & Marques Cultes',
+        history: 'Histoire & Grands Personnages', geo: 'Géo, Capitales & Monuments', science: 'Sciences, Espace & Nature',
+        travel: 'Voyages & Pays du Monde', food: 'Cuisine & Gastronomie', music: 'Musique & Chansons', sports: 'Sports & Loisirs',
+        pokemon: "Rush'Up! Pokémon", manga: "Rush'Up! Mangas & Anime", series: "Rush'Up! Séries TV", gaming: "Rush'Up! Gaming",
+        dc: "Rush'Up! DC Comics", harrypotter: "Rush'Up! Harry Potter", marvel: "Rush'Up! Marvel", disney: "Rush'Up! Disney / Pixar", starwars: "Rush'Up! Star Wars"
+    };
+
+    const ROUND_INFO = {
+        1: { title: "Manche 1 : Description libre", hint: "Décrivez le mot librement sans le prononcer ni le traduire. Les coéquipiers peuvent proposer autant de réponses qu'ils le veulent." },
+        2: { title: "Manche 2 : Un seul mot", hint: "Vous ne pouvez prononcer qu'UN SEUL mot d'indice par carte. Une seule proposition autorisée par carte." },
+        3: { title: "Manche 3 : Mime & Bruitages", hint: "Interdiction de parler ! Mimez et utilisez des bruitages uniquement. Une seule proposition autorisée par carte." }
+    };
+
+    // --- CONFIGURATION (brouillon côté hôte, avant lancement) ---
+    let isConfigTeamCount = 2;
+    let isConfigTimer = 45;
+    let isConfigTheme = 'gen_easy';
+    let isConfigWordCount = 40;
+    let isConfigPassRule = 'byRound';
+    let isConfigPenaltyActive = false;
+    let isConfigPenaltySeconds = 5;
+    let isConfigJoker = false;
+    let configTeamAssignments = {}; // peerId -> numéro d'équipe (ajustable par l'hôte)
+
+    // État PUBLIC (connu de tout le monde, mis à jour par diffusion de l'hôte)
+    let gameState = {
+        phase: 'lobby', // lobby | round-intro | playing | round-end | final
+        numTeams: 2,
+        timerConfig: 45,
+        passRule: 'byRound', // byRound | always | never
+        penaltyActive: false,
+        penaltySeconds: 5,
+        isPaused: false,
+        pausedAt: null,
+        turnReady: false,
+        round: 1,
+        teamRosters: {},        // team -> [peerId, ...]
+        playerTurnIndexes: {},  // team -> index dans le roster
+        currentTeam: 1,
+        activePlayerId: null,
+        turnStartAt: null,
+        scores: {},
+        wordsFoundThisTurn: 0,
+        wordsRemainingCount: 0
+    };
+
+    // État HÔTE UNIQUEMENT (jamais diffusé tel quel : contient les mots restants)
+    let fullDeck = [];       // paquet complet tiré au début de la partie (réutilisé à l'identique à chaque manche)
+    let hostDeck = [];       // mots restants pour la manche en cours
+    let jokerWord = null;
+    let currentTurnFoundCount = 0;
+    let tgvRecord = { entity: null, count: 0 };
+    let passesPerEntity = {};      // peerId -> nb de passes
+    let foundCountPerPlayer = {};  // peerId -> nb de mots trouvés (total partie)
+    let passesPerWordTotal = {};   // mot -> nb de fois passé (total partie)
+    let wordFoundLog = [];         // [{ word, round, team, playerId, joker }]
+    let lastFoundAction = null;    // pour l'annulation (undo)
+    let gameTimerRAF = null;
+    let clockOffset = 0; // écart entre l'horloge de l'hôte et la nôtre (ms), pour un chrono synchronisé
+    let currentStreak = 0;
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.innerText = str == null ? '' : str;
+        return div.innerHTML;
+    }
+
+    function isHost() {
+        return getHostId() === myId;
+    }
+
+    function getHostId() {
+        const ids = Object.keys(presentPlayers);
+        if (ids.length === 0) return null;
+        // L'hôte est celui arrivé en premier dans le salon (plus petit horodatage de connexion)
+        return ids.reduce((a, b) => (presentPlayersJoinedAt[a] <= presentPlayersJoinedAt[b] ? a : b));
+    }
+
+    function refreshHostStatus() {
+        // Ne perturbe pas une partie déjà lancée : seule la vue "attente/config" en dépend
+        if (gameState.phase !== 'lobby') return;
+        const hostView = document.getElementById('host-config-view');
+        const nonHostView = document.getElementById('non-host-waiting');
+        if (isHost()) {
+            hostView.style.display = 'block';
+            nonHostView.style.display = 'none';
+            populateThemeSelect();
+            renderTeamAssignmentUI();
+        } else {
+            hostView.style.display = 'none';
+            nonHostView.style.display = 'block';
+        }
+    }
+
+    function populateThemeSelect() {
+        const select = document.getElementById('theme-select');
+        if (select.dataset.populated) return;
+        let html = '';
+        Object.keys(THEME_GROUPS).forEach(groupKey => {
+            const group = THEME_GROUPS[groupKey];
+            html += `<optgroup label="${group.label}">`;
+            group.themes.forEach(themeKey => {
+                html += `<option value="${themeKey}">${THEME_LABELS[themeKey]}</option>`;
+            });
+            html += `</optgroup>`;
+        });
+        select.innerHTML = html;
+        select.value = isConfigTheme;
+        select.dataset.populated = 'true';
+        select.onchange = () => { isConfigTheme = select.value; };
+    }
+
+    function adjustTeamCount(delta) {
+        const ids = Object.keys(presentPlayers);
+        const maxAllowed = Math.max(2, Math.floor(ids.length / 2)); // au moins 2 joueurs par équipe
+        isConfigTeamCount = Math.max(2, Math.min(6, Math.min(maxAllowed, isConfigTeamCount + delta)));
+        document.getElementById('team-count-value').innerText = isConfigTeamCount;
+        // Les joueurs assignés à une équipe qui n'existe plus retombent en équipe 1
+        Object.keys(configTeamAssignments).forEach(id => {
+            if (configTeamAssignments[id] > isConfigTeamCount) configTeamAssignments[id] = 1;
+        });
+        renderTeamAssignmentUI();
+    }
+
+    function selectTimer(val) {
+        isConfigTimer = val;
+        document.querySelectorAll('#timer-select .timer-option').forEach(el => {
+            el.classList.toggle('active', parseInt(el.dataset.val) === val);
+        });
+    }
+
+    function selectWordCount(val) {
+        isConfigWordCount = val;
+        document.querySelectorAll('#wordcount-select .timer-option').forEach(el => {
+            el.classList.toggle('active', parseInt(el.dataset.val) === val);
+        });
+    }
+
+    function togglePenaltyDropdown() {
+        const isChecked = document.getElementById('penalty-toggle').checked;
+        document.getElementById('penalty-dropdown-container').style.display = isChecked ? 'block' : 'none';
+    }
+
+    function assignPlayerTeam(peerId, team) {
+        configTeamAssignments[peerId] = team;
+        renderTeamAssignmentUI();
+    }
+
+    function renderTeamAssignmentUI() {
+        const ids = Object.keys(presentPlayers);
+        const preview = document.getElementById('team-preview');
+        const startBtn = document.getElementById('start-game-btn');
+        const status = document.getElementById('host-config-status');
+
+        // La taille max d'équipe autorisée dépend du nombre de joueurs (2 par équipe minimum)
+        const maxAllowedTeams = Math.max(2, Math.floor(ids.length / 2));
+        if (isConfigTeamCount > maxAllowedTeams) {
+            isConfigTeamCount = Math.max(2, maxAllowedTeams);
+            const teamValueEl = document.getElementById('team-count-value');
+            if (teamValueEl) teamValueEl.innerText = isConfigTeamCount;
+        }
+
+        // Assigne automatiquement (round-robin) les joueurs qui n'ont pas encore d'équipe
+        ids.forEach((id, i) => {
+            if (!configTeamAssignments[id] || configTeamAssignments[id] > isConfigTeamCount) {
+                configTeamAssignments[id] = (i % isConfigTeamCount) + 1;
+            }
+        });
+        // Nettoie les entrées de joueurs partis
+        Object.keys(configTeamAssignments).forEach(id => {
+            if (!ids.includes(id)) delete configTeamAssignments[id];
+        });
+
+        if (ids.length < 4) {
+            preview.innerHTML = '';
+            startBtn.disabled = true;
+            status.innerText = `Il faut au moins 4 joueurs connectés pour jouer (actuellement ${ids.length}). Chaque joueur doit faire deviner à un coéquipier.`;
+            return;
+        }
+
+        // Regroupe visuellement les joueurs par équipe ; un bouton par équipe pour une assignation directe
+        let html = '';
+        let hasEmptyTeam = false;
+        for (let t = 1; t <= isConfigTeamCount; t++) {
+            const members = ids.filter(id => configTeamAssignments[id] === t);
+            if (members.length < 2) hasEmptyTeam = true;
+            html += `<div class="team-group"><div class="team-group-title">Équipe ${t}${members.length < 2 ? ' ⚠️ min. 2 joueurs' : ''}</div>`;
+            html += members.map(id => {
+                const name = presentPlayers[id] || '—';
+                const teamButtons = Array.from({ length: isConfigTeamCount }, (_, i) => i + 1).map(n =>
+                    `<button type="button" class="team-pick-btn${n === t ? ' active' : ''}" onclick="assignPlayerTeam('${id}', ${n})">${n}</button>`
+                ).join('');
+                return `<div class="team-preview-row"><span>${escapeHtml(name)}${id === myId ? ' (toi)' : ''}</span><span class="team-pick-group">${teamButtons}</span></div>`;
+            }).join('') || '<div class="team-group-empty">Aucun joueur</div>';
+            html += `</div>`;
+        }
+        preview.innerHTML = html;
+
+        if (hasEmptyTeam) {
+            startBtn.disabled = true;
+            status.innerText = 'Chaque équipe doit avoir au moins 2 joueurs.';
+        } else {
+            startBtn.disabled = false;
+            status.innerText = '';
+        }
+    }
+
+    function shuffleGame(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    }
+
+    function isPassAllowed() {
+        if (gameState.passRule === 'always') return true;
+        if (gameState.passRule === 'never') return false;
+        return gameState.round > 1; // byRound
+    }
+
+    // --- DÉMARRAGE DE PARTIE (hôte) ---
+    function hostStartGame() {
+        if (!isHost()) return;
+        const ids = Object.keys(presentPlayers);
+        if (ids.length < 4) return;
+        // Vérifie qu'aucune équipe n'a moins de 2 joueurs avant de démarrer
+        const counts = {};
+        ids.forEach(id => { const t = configTeamAssignments[id] || 1; counts[t] = (counts[t] || 0) + 1; });
+        for (let t = 1; t <= isConfigTeamCount; t++) {
+            if ((counts[t] || 0) < 2) return;
+        }
+
+        isConfigPassRule = document.getElementById('passrule-select').value;
+        isConfigPenaltyActive = document.getElementById('penalty-toggle').checked;
+        isConfigPenaltySeconds = parseInt(document.getElementById('penalty-seconds-select').value) || 5;
+        isConfigJoker = document.getElementById('joker-toggle').checked;
+
+        // Construit le paquet de mots (thème choisi, mélangé, tronqué au nombre demandé)
+        const themeBank = shuffleGame([...(WORD_DATABASE[isConfigTheme] || WORD_DATABASE.gen_easy)]);
+        fullDeck = themeBank.slice(0, isConfigWordCount);
+        jokerWord = isConfigJoker && fullDeck.length > 0 ? fullDeck[Math.floor(Math.random() * fullDeck.length)] : null;
+
+        // Construit les équipes à partir des assignations de l'hôte
+        const teamRosters = {};
+        for (let t = 1; t <= isConfigTeamCount; t++) teamRosters[t] = [];
+        ids.forEach(id => {
+            const team = configTeamAssignments[id] || 1;
+            teamRosters[team].push(id);
+        });
+        // Sécurité : une équipe sans joueur récupère un joueur de l'équipe la plus fournie
+        for (let t = 1; t <= isConfigTeamCount; t++) {
+            if (teamRosters[t].length === 0) {
+                const donor = Object.keys(teamRosters).sort((a, b) => teamRosters[b].length - teamRosters[a].length)[0];
+                teamRosters[t].push(teamRosters[donor].pop());
+            }
+        }
+
+        const scores = {};
+        const playerTurnIndexes = {};
+        for (let t = 1; t <= isConfigTeamCount; t++) { scores[t] = 0; playerTurnIndexes[t] = 0; }
+
+        passesPerEntity = {};
+        foundCountPerPlayer = {};
+        passesPerWordTotal = {};
+        wordFoundLog = [];
+        tgvRecord = { entity: null, count: 0 };
+        ids.forEach(id => { passesPerEntity[id] = 0; foundCountPerPlayer[id] = 0; });
+
+        gameState = {
+            phase: 'round-intro',
+            numTeams: isConfigTeamCount,
+            timerConfig: isConfigTimer,
+            passRule: isConfigPassRule,
+            penaltyActive: isConfigPenaltyActive,
+            penaltySeconds: isConfigPenaltySeconds,
+            isPaused: false,
+            pausedAt: null,
+            turnReady: false,
+            round: 1,
+            teamRosters,
+            playerTurnIndexes,
+            currentTeam: 1,
+            activePlayerId: teamRosters[1][0],
+            turnStartAt: null,
+            scores,
+            wordsFoundThisTurn: 0,
+            wordsRemainingCount: fullDeck.length
+        };
+
+        broadcastGameState();
+    }
+
+    // --- L'hôte lance effectivement la manche (après l'écran d'intro) ---
+    function hostBeginRound() {
+        if (!isHost()) return;
+        hostDeck = [...fullDeck]; // même paquet, même ordre, à chaque manche (règle officielle)
+        gameState.phase = 'playing';
+        gameState.turnStartAt = null;
+        gameState.turnReady = false;
+        gameState.wordsFoundThisTurn = 0;
+        gameState.wordsRemainingCount = hostDeck.length;
+        gameState.hasUndo = false;
+        currentTurnFoundCount = 0;
+        lastFoundAction = null;
+        broadcastGameState();
+    }
+
+    function hostGoToNextRoundIntro() {
+        if (!isHost()) return;
+        gameState.round++;
+        gameState.currentTeam = 1;
+        gameState.activePlayerId = gameState.teamRosters[1][gameState.playerTurnIndexes[1] % gameState.teamRosters[1].length];
+        gameState.phase = 'round-intro';
+        broadcastGameState();
+    }
+
+    function hostRestartToConfig() {
+        if (!isHost()) return;
+        gameState.phase = 'lobby';
+        broadcastGameState();
+    }
+
+    function sendGameMsg(to, type, data) {
+        channel.send({
+            type: 'broadcast',
+            event: 'game-msg',
+            payload: { to, from: myId, type, data }
+        });
+    }
+
+    function broadcastGameState() {
+        // On envoie l'état public à tout le monde (SANS les mots restants : ça reste secret côté hôte)
+        // + notre horodatage pour que chaque appareil calcule son décalage d'horloge avec l'hôte.
+        sendGameMsg('all', 'state', { ...gameState, hostNow: Date.now() });
+        applyGameState(gameState); // l'hôte s'applique aussi l'état à lui-même (décalage = 0, c'est la référence)
+    }
+
+    function hostSendSecretWord() {
+        if (hostDeck.length === 0) return; // ne devrait pas arriver : hostEndRound() est appelé avant
+        const word = hostDeck[0];
+        const isJoker = jokerWord !== null && word === jokerWord;
+        sendGameMsg(gameState.activePlayerId, 'secret-word', { word, isJoker });
+        if (gameState.activePlayerId === myId) {
+            // Le canal ne renvoie pas ses propres messages (self: false) :
+            // si l'hôte est lui-même le joueur actif, on s'applique le mot directement.
+            showSecretWord(word, isJoker);
+        }
+    }
+
+    function handleGameMessage(payload) {
+        if (payload.to !== 'all' && payload.to !== myId) return;
+
+        if (payload.type === 'state') {
+            if (payload.from !== myId && typeof payload.data.hostNow === 'number') {
+                clockOffset = payload.data.hostNow - Date.now();
+            }
+            applyGameState(payload.data);
+        } else if (payload.type === 'secret-word') {
+            showSecretWord(payload.data.word, payload.data.isJoker);
+        } else if (payload.type === 'final-summary') {
+            renderFinalSummary(payload.data);
+        } else if (payload.type === 'action' && isHost()) {
+            handlePlayerAction(payload.from, payload.data.action);
+        }
+    }
+
+    function handlePlayerAction(fromId, action) {
+        if (fromId !== gameState.activePlayerId) return; // sécurité : seul le joueur actif agit
+        if (gameState.phase !== 'playing') return;
+
+        if (action === 'ready') {
+            if (gameState.turnReady) return;
+            gameState.turnReady = true;
+            gameState.turnStartAt = Date.now();
+            broadcastGameState();
+            hostSendSecretWord();
+            return;
+        }
+
+        if (!gameState.turnReady) return; // aucune autre action tant que le joueur n'a pas confirmé le début de son tour
+
+        if (action === 'found') {
+            const word = hostDeck[0];
+            const isJoker = jokerWord !== null && word === jokerWord;
+            const points = isJoker ? 2 : 1;
+            const team = gameState.currentTeam;
+
+            gameState.scores[team] = (gameState.scores[team] || 0) + points;
+            gameState.wordsFoundThisTurn++;
+            currentTurnFoundCount++;
+            foundCountPerPlayer[fromId] = (foundCountPerPlayer[fromId] || 0) + points;
+
+            if (currentTurnFoundCount > tgvRecord.count) {
+                tgvRecord = { entity: fromId, count: currentTurnFoundCount };
+            }
+
+            wordFoundLog.push({ word, round: gameState.round, team, playerId: fromId, joker: isJoker });
+            lastFoundAction = { word, playerId: fromId, team, points, turnFoundBefore: currentTurnFoundCount - 1 };
+            gameState.hasUndo = true;
+
+            hostDeck.shift();
+            gameState.wordsRemainingCount = hostDeck.length;
+
+            if (hostDeck.length === 0) {
+                hostEndRound();
+            } else {
+                broadcastGameState();
+                hostSendSecretWord();
+            }
+        } else if (action === 'pass') {
+            if (!isPassAllowed()) return;
+            const word = hostDeck[0];
+            passesPerEntity[fromId] = (passesPerEntity[fromId] || 0) + 1;
+            passesPerWordTotal[word] = (passesPerWordTotal[word] || 0) + 1;
+            hostDeck.push(hostDeck.shift());
+            lastFoundAction = null; // une passe invalide l'annulation en cours
+            gameState.hasUndo = false;
+
+            if (gameState.penaltyActive) {
+                gameState.turnStartAt -= gameState.penaltySeconds * 1000;
+                const elapsed = (Date.now() - gameState.turnStartAt) / 1000;
+                if (gameState.timerConfig - elapsed <= 0) {
+                    hostAdvanceTurn();
+                    return;
+                }
+                broadcastGameState();
+            }
+            hostSendSecretWord();
+        } else if (action === 'undo') {
+            if (!lastFoundAction || lastFoundAction.playerId !== fromId) return;
+            gameState.scores[lastFoundAction.team] -= lastFoundAction.points;
+            foundCountPerPlayer[fromId] -= lastFoundAction.points;
+            currentTurnFoundCount = lastFoundAction.turnFoundBefore;
+            gameState.wordsFoundThisTurn = Math.max(0, gameState.wordsFoundThisTurn - 1);
+            wordFoundLog.pop();
+            hostDeck.unshift(lastFoundAction.word);
+            gameState.wordsRemainingCount = hostDeck.length;
+            lastFoundAction = null;
+            gameState.hasUndo = false;
+            broadcastGameState();
+            hostSendSecretWord();
+        } else if (action === 'timeout') {
+            if (gameState.isPaused) return; // on ignore un timeout qui arriverait pendant une pause
+            hostAdvanceTurn();
+        } else if (action === 'pause') {
+            if (gameState.isPaused) return;
+            gameState.isPaused = true;
+            gameState.pausedAt = Date.now();
+            broadcastGameState();
+        } else if (action === 'resume') {
+            if (!gameState.isPaused) return;
+            gameState.turnStartAt += (Date.now() - gameState.pausedAt);
+            gameState.isPaused = false;
+            gameState.pausedAt = null;
+            broadcastGameState();
+        }
+    }
+
+    function hostAdvanceTurn() {
+        const team = gameState.currentTeam;
+        gameState.playerTurnIndexes[team] = (gameState.playerTurnIndexes[team] + 1) % gameState.teamRosters[team].length;
+        gameState.currentTeam = (gameState.currentTeam % gameState.numTeams) + 1;
+        const nextTeam = gameState.currentTeam;
+        gameState.activePlayerId = gameState.teamRosters[nextTeam][gameState.playerTurnIndexes[nextTeam] % gameState.teamRosters[nextTeam].length];
+        gameState.turnStartAt = null;
+        gameState.turnReady = false;
+        gameState.wordsFoundThisTurn = 0;
+        currentTurnFoundCount = 0;
+        lastFoundAction = null;
+        gameState.hasUndo = false;
+        broadcastGameState();
+    }
+
+    function hostEndRound() {
+        if (gameState.round < 3) {
+            gameState.phase = 'round-end';
+            broadcastGameState();
+        } else {
+            gameState.phase = 'final';
+            broadcastGameState();
+            sendGameMsg('all', 'final-summary', buildFinalSummary());
+            renderFinalSummary(buildFinalSummary());
+        }
+    }
+
+    function buildFinalSummary() {
+        let bestRatio = -1;
+        let brainWinnerId = null;
+        let brainDetail = '';
+
+        Object.keys(gameState.teamRosters).forEach(t => {
+            gameState.teamRosters[t].forEach(playerId => {
+                const val = foundCountPerPlayer[playerId] || 0;
+                const pas = passesPerEntity[playerId] || 0;
+                const ratio = (pas === 0) ? (val * 10) : (val / pas);
+                if (val > 0 && ratio > bestRatio) {
+                    bestRatio = ratio;
+                    brainWinnerId = playerId;
+                    brainDetail = pas === 0 ? `${val} mots (Aucun mot passé !)` : `${val} mots / ${pas} passés (Ratio: ${ratio.toFixed(2)})`;
+                }
+            });
+        });
+
+        let maxWordPasses = 0;
+        let fishWord = null;
+        Object.keys(passesPerWordTotal).forEach(w => {
+            if (passesPerWordTotal[w] > maxWordPasses) {
+                maxWordPasses = passesPerWordTotal[w];
+                fishWord = w;
+            }
+        });
+
+        return {
+            scores: gameState.scores,
+            numTeams: gameState.numTeams,
+            tgv: tgvRecord.count > 0 ? { name: escapeHtml(presentPlayers[tgvRecord.entity] || remoteNames[tgvRecord.entity] || '—'), count: tgvRecord.count } : null,
+            brain: brainWinnerId ? { name: escapeHtml(presentPlayers[brainWinnerId] || remoteNames[brainWinnerId] || '—'), detail: brainDetail } : null,
+            fish: fishWord ? { word: escapeHtml(fishWord), count: maxWordPasses } : null,
+            wordLog: wordFoundLog.map(e => ({ ...e, word: escapeHtml(e.word), playerName: escapeHtml(presentPlayers[e.playerId] || remoteNames[e.playerId] || '—') }))
+        };
+    }
+
+    // --- APPLICATION DE L'ÉTAT REÇU (côté client, tout le monde) ---
+    function applyGameState(state) {
+        gameState = state;
+
+        ['game-waiting-view', 'round-intro-view', 'game-active-view', 'round-end-view', 'final-view'].forEach(id => {
+            document.getElementById(id).style.display = 'none';
+        });
+
+        if (state.phase === 'lobby') {
+            document.getElementById('game-waiting-view').style.display = 'block';
+            setSpotlightPlayer(getHostId());
+            refreshHostStatus();
+            return;
+        }
+
+        if (state.phase === 'round-intro') {
+            document.getElementById('round-intro-view').style.display = 'block';
+            const info = ROUND_INFO[state.round];
+            document.getElementById('round-intro-title').innerText = info.title;
+            document.getElementById('round-intro-hint').innerText = info.hint;
+            document.getElementById('round-intro-host-btn-wrap').style.display = isHost() ? 'block' : 'none';
+            document.getElementById('round-intro-wait-text').style.display = isHost() ? 'none' : 'block';
+            setSpotlightPlayer(getHostId());
+            return;
+        }
+
+        if (state.phase === 'playing') {
+            document.getElementById('game-active-view').style.display = 'block';
+
+            document.getElementById('round-pill').innerText = ROUND_INFO[state.round].title;
+
+            const activeName = presentPlayers[state.activePlayerId] || remoteNames[state.activePlayerId] || (state.activePlayerId === myId ? myName : '—');
+            const activeTeamNum = state.teamRosters && Object.keys(state.teamRosters).find(t => state.teamRosters[t].includes(state.activePlayerId)) || '?';
+            const isMyTurn = state.activePlayerId === myId;
+
+            setSpotlightPlayer(state.activePlayerId);
+            renderScoreboard(state.scores, state.numTeams, 'scoreboard');
+
+            if (!state.turnReady) {
+                // Transition entre deux joueurs : on attend la confirmation du joueur actif avant de démarrer le chrono
+                document.getElementById('turn-confirm-view').style.display = 'block';
+                document.getElementById('turn-active-view').style.display = 'none';
+                document.getElementById('turn-confirm-name').innerText = activeName;
+                document.getElementById('turn-confirm-team').innerText = `Équipe ${activeTeamNum}`;
+                document.getElementById('turn-confirm-ready-btn').style.display = isMyTurn ? 'block' : 'none';
+                document.getElementById('turn-confirm-wait-text').style.display = isMyTurn ? 'none' : 'block';
+                if (gameTimerRAF) cancelAnimationFrame(gameTimerRAF);
+                currentStreak = 0;
+                return;
+            }
+
+            document.getElementById('turn-confirm-view').style.display = 'none';
+            document.getElementById('turn-active-view').style.display = 'block';
+
+            document.getElementById('active-player-name').innerText = `🎤 ${activeName}`;
+            document.getElementById('active-team-name').innerText = `Équipe ${activeTeamNum}`;
+
+            document.getElementById('game-action-btns').style.display = (isMyTurn && !state.isPaused) ? 'grid' : 'none';
+            document.getElementById('pass-btn').style.display = isPassAllowed() ? 'block' : 'none';
+            document.getElementById('undo-btn').style.display = (isMyTurn && state.hasUndo && !state.isPaused) ? 'block' : 'none';
+            const pauseBtn = document.getElementById('pause-btn');
+            pauseBtn.style.display = isMyTurn ? 'flex' : 'none';
+            pauseBtn.innerText = state.isPaused ? '▶️' : '⏸️';
+
+            const wordCard = document.getElementById('word-card');
+            if (!isMyTurn) {
+                wordCard.classList.add('locked');
+                wordCard.innerText = '🔒 Mot secret';
+            }
+
+            if (!isMyTurn) currentStreak = 0;
+
+            restartTimerLoop(state);
+            return;
+        }
+
+        if (state.phase === 'round-end') {
+            document.getElementById('round-end-view').style.display = 'block';
+            renderScoreboard(state.scores, state.numTeams, 'round-end-scoreboard');
+            document.getElementById('round-end-host-btn-wrap').style.display = isHost() ? 'block' : 'none';
+            document.getElementById('round-end-wait-text').style.display = isHost() ? 'none' : 'block';
+            setSpotlightPlayer(getHostId());
+            if (gameTimerRAF) cancelAnimationFrame(gameTimerRAF);
+            return;
+        }
+
+        if (state.phase === 'final') {
+            document.getElementById('final-view').style.display = 'block';
+            renderScoreboard(state.scores, state.numTeams, 'final-scoreboard');
+            document.getElementById('final-host-btn-wrap').style.display = isHost() ? 'block' : 'none';
+            document.getElementById('final-wait-text').style.display = isHost() ? 'none' : 'block';
+            setSpotlightPlayer(getHostId());
+            if (gameTimerRAF) cancelAnimationFrame(gameTimerRAF);
+            return;
+        }
+    }
+
+    function showSecretWord(word, isJoker) {
+        const wordCard = document.getElementById('word-card');
+        wordCard.classList.remove('locked');
+        wordCard.innerText = isJoker ? `🃏 ${word}` : word;
+
+        currentStreak++;
+        if (isJoker) {
+            showGameToast('🃏 MOT JOKER ! +2', 'joker');
+        } else if (currentStreak >= 3) {
+            showGameToast(`🔥 Combo x${currentStreak}`, 'combo');
+        }
+    }
+
+    function showGameToast(message, variant) {
+        let toast = document.getElementById('game-toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'game-toast';
+            toast.className = 'game-toast';
+            document.getElementById('game-section').prepend(toast);
+        }
+        toast.innerText = message;
+        toast.className = 'game-toast show' + (variant ? ` ${variant}` : '');
+        clearTimeout(toast._hideTimeout);
+        toast._hideTimeout = setTimeout(() => toast.classList.remove('show'), 1400);
+    }
+
+    function renderScoreboard(scores, numTeams, targetId) {
+        const el = document.getElementById(targetId);
+        const myTeam = gameState.teamRosters ? Object.keys(gameState.teamRosters).find(t => gameState.teamRosters[t].includes(myId)) : null;
+        let html = '';
+        for (let t = 1; t <= numTeams; t++) {
+            const mine = String(t) === String(myTeam);
+            const members = gameState.teamRosters && gameState.teamRosters[t]
+                ? gameState.teamRosters[t].map(id => escapeHtml(presentPlayers[id] || remoteNames[id] || (id === myId ? myName : '?'))).join(', ')
+                : '';
+            html += `<div class="scoreboard-row${mine ? ' mine' : ''}"><span>Équipe ${t}${mine ? ' (toi)' : ''}${members ? ` — ${members}` : ''}</span><span class="pts">${scores[t] || 0}</span></div>`;
+        }
+        el.innerHTML = html;
+    }
+
+    function renderFinalSummary(summary) {
+        document.getElementById('trophies-container').innerHTML = `
+            <div class="trophy-card">
+                <div class="trophy-icon">🚄</div>
+                <div class="trophy-details">
+                    <span class="trophy-title">Le TGV</span>
+                    <span class="trophy-winner">${summary.tgv ? `${summary.tgv.name} (${summary.tgv.count} mots)` : '—'}</span>
+                    <span class="trophy-desc">Plus grand nombre de mots devinés en un seul tour !</span>
+                </div>
+            </div>
+            <div class="trophy-card">
+                <div class="trophy-icon">🧠</div>
+                <div class="trophy-details">
+                    <span class="trophy-title">Le Cerveau</span>
+                    <span class="trophy-winner">${summary.brain ? `${summary.brain.name}<br><small style="color:var(--text-muted);">${summary.brain.detail}</small>` : '—'}</span>
+                    <span class="trophy-desc">Meilleur ratio mots trouvés / mots passés !</span>
+                </div>
+            </div>
+            <div class="trophy-card">
+                <div class="trophy-icon">🐟</div>
+                <div class="trophy-details">
+                    <span class="trophy-title">Le Poisson Rouge</span>
+                    <span class="trophy-winner">${summary.fish ? `${summary.fish.word} (passé ${summary.fish.count} fois)` : '—'}</span>
+                    <span class="trophy-desc">Le mot le plus souvent passé de la partie !</span>
+                </div>
+            </div>
+        `;
+
+        const recapEl = document.getElementById('word-recap-body');
+        recapEl.innerHTML = summary.wordLog.map(e =>
+            `<div class="recap-row"><span>${e.joker ? '🃏 ' : ''}${e.word}</span><span>Manche ${e.round} · Équipe ${e.team} · ${e.playerName}</span></div>`
+        ).join('') || '<div class="recap-row"><span>Aucun mot enregistré.</span></div>';
+    }
+
+    function toggleWordRecap() {
+        const body = document.getElementById('word-recap-body');
+        const arrow = document.getElementById('word-recap-arrow');
+        body.classList.toggle('open');
+        arrow.innerText = body.classList.contains('open') ? '▴' : '▾';
+    }
+
+    function restartTimerLoop(state) {
+        if (gameTimerRAF) cancelAnimationFrame(gameTimerRAF);
+        const display = document.getElementById('game-timer-display');
+
+        if (state.isPaused) {
+            // Chrono gelé : on affiche le temps restant au moment de la pause, sans boucle qui tourne.
+            const elapsedAtPause = (state.pausedAt - state.turnStartAt) / 1000;
+            const remaining = Math.max(0, Math.ceil(state.timerConfig - elapsedAtPause));
+            display.innerText = `⏸️ ${remaining}s`;
+            display.classList.add('paused');
+            display.classList.remove('warning');
+            return;
+        }
+        display.classList.remove('paused');
+
+        function tick() {
+            const elapsed = (Date.now() + clockOffset - state.turnStartAt) / 1000;
+            const remaining = Math.max(0, Math.ceil(state.timerConfig - elapsed));
+            display.innerText = `${remaining}s`;
+            display.classList.toggle('warning', remaining <= 10);
+
+            if (remaining <= 0) {
+                if (state.activePlayerId === myId) {
+                    sendPlayerAction('timeout');
+                }
+                return; // on arrête la boucle locale : un nouvel état arrivera de l'hôte
+            }
+            gameTimerRAF = requestAnimationFrame(tick);
+        }
+        tick();
+    }
+
+    function togglePause() {
+        if (gameState.activePlayerId !== myId) return;
+        sendPlayerAction(gameState.isPaused ? 'resume' : 'pause');
+    }
+
+    function sendPlayerAction(action) {
+        if (gameState.activePlayerId !== myId) return;
+        if (action === 'undo') {
+            document.getElementById('undo-btn').style.display = 'none';
+        }
+        if (isHost()) {
+            handlePlayerAction(myId, action);
+        } else {
+            sendGameMsg(getHostId(), 'action', { action });
+        }
+    }
+
+    function resetGameState() {
+        if (gameTimerRAF) cancelAnimationFrame(gameTimerRAF);
+        gameState = { phase: 'lobby', numTeams: 2, timerConfig: 45, passRule: 'byRound', penaltyActive: false, penaltySeconds: 5, isPaused: false, pausedAt: null, turnReady: false, round: 1, teamRosters: {}, playerTurnIndexes: {}, currentTeam: 1, activePlayerId: null, turnStartAt: null, scores: {}, wordsFoundThisTurn: 0, wordsRemainingCount: 0 };
+        fullDeck = [];
+        hostDeck = [];
+        jokerWord = null;
+        wordFoundLog = [];
+        clockOffset = 0;
+        currentStreak = 0;
+        configTeamAssignments = {};
+        document.getElementById('game-waiting-view').style.display = 'block';
+        document.getElementById('game-active-view').style.display = 'none';
+        document.getElementById('round-intro-view').style.display = 'none';
+        document.getElementById('round-end-view').style.display = 'none';
+        document.getElementById('final-view').style.display = 'none';
+        setSpotlightPlayer(null);
+    }
+
+</script>
+</body>
+</html>
