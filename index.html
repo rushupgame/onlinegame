@@ -435,6 +435,35 @@
         border-top: 1px solid var(--card-border);
     }
 
+    /* Une fois la partie lancée, le code de session et le bouton "Quitter" quittent le haut
+       de l'écran (où ils prenaient une place précieuse sur mobile) pour atterrir ici, en
+       version réduite — l'essentiel de l'écran reste dédié au jeu et aux webcams. */
+    .room-footer-controls {
+        display: none;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 10px;
+    }
+
+    .room-footer-controls.active { display: flex; }
+
+    .room-footer-controls .room-code-badge {
+        padding: 4px 10px;
+        font-size: 0.75rem;
+        letter-spacing: 1px;
+    }
+
+    .room-footer-controls .room-code-label {
+        font-size: 0.6rem;
+    }
+
+    .room-footer-controls .leave-btn {
+        padding: 5px 12px;
+        font-size: 0.78rem;
+    }
+
     .setup-note {
         background: rgba(255,165,2,0.1);
         border: 1px solid var(--warning);
@@ -997,7 +1026,7 @@
 
 <!-- ÉCRAN 2 : Salon vidéo -->
 <div id="room-screen" class="screen">
-    <div class="room-header">
+    <div class="room-header" id="room-header">
         <div class="room-code-badge"><span class="room-code-label">Code de session</span> <span id="room-code-display">—</span></div>
         <button class="leave-btn" onclick="leaveRoom()">🚪 Quitter le salon</button>
     </div>
@@ -1176,7 +1205,10 @@
         </div>
     </div>
 
-    <footer class="room-footer">💡 Tape le 🔊 sur la webcam d'un joueur avec qui tu es dans la même pièce pour couper son son et éviter le larsen.</footer>
+    <footer class="room-footer">
+        <div class="room-footer-controls" id="room-footer-controls"></div>
+        <div class="sameroom-hint-text">💡 Tape le 🔊 sur la webcam d'un joueur avec qui tu es dans la même pièce pour couper son son et éviter le larsen.</div>
+    </footer>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -1385,6 +1417,27 @@
         // un écran qui s'éteint casse le chrono et la vidéo en pleine partie sur mobile.
         if (id === 'room-screen') requestWakeLock();
         else releaseWakeLock();
+    }
+
+    // Le code de session et le bouton "Quitter" occupent le haut de l'écran pendant qu'on
+    // configure/attend (utile pour partager le code). Dès que la partie démarre, on les
+    // déplace en bas (footer, en plus petit) pour laisser toute la place au jeu sur mobile —
+    // on déplace les mêmes éléments DOM (pas de duplication) pour ne rien casser.
+    function updateHeaderFooterPlacement(gameStarted) {
+        const header = document.getElementById('room-header');
+        const footerControls = document.getElementById('room-footer-controls');
+        if (!header || !footerControls) return;
+        const alreadyInFooter = header.children.length === 0;
+
+        if (gameStarted && !alreadyInFooter) {
+            while (header.firstChild) footerControls.appendChild(header.firstChild);
+            header.style.display = 'none';
+            footerControls.classList.add('active');
+        } else if (!gameStarted && alreadyInFooter) {
+            while (footerControls.firstChild) header.appendChild(footerControls.firstChild);
+            header.style.display = 'flex';
+            footerControls.classList.remove('active');
+        }
     }
 
     // Confirmation avant de fermer/recharger l'onglet par erreur (swipe, geste accidentel...) :
@@ -2299,15 +2352,15 @@ gen_easy: ["Bouteille", "Soleil", "Voiture", "Maison", "Fleur", "Chien", "Chat",
         applyGameState(gameState); // l'hôte s'applique aussi l'état à lui-même (décalage = 0, c'est la référence)
     }
 
-    function hostSendSecretWord(breakStreak) {
+    function hostSendSecretWord(streakMode) {
         if (hostDeck.length === 0) return; // ne devrait pas arriver : hostEndRound() est appelé avant
         const word = hostDeck[0];
         const isJoker = jokerWord !== null && word === jokerWord;
-        sendGameMsg(gameState.activePlayerId, 'secret-word', { word, isJoker, breakStreak: !!breakStreak });
+        sendGameMsg(gameState.activePlayerId, 'secret-word', { word, isJoker, streakMode: streakMode || 'found' });
         if (gameState.activePlayerId === myId) {
             // Le canal ne renvoie pas ses propres messages (self: false) :
             // si l'hôte est lui-même le joueur actif, on s'applique le mot directement.
-            showSecretWord(word, isJoker, !!breakStreak);
+            showSecretWord(word, isJoker, streakMode || 'found');
         }
     }
 
@@ -2320,7 +2373,7 @@ gen_easy: ["Bouteille", "Soleil", "Voiture", "Maison", "Fleur", "Chien", "Chat",
             }
             applyGameState(payload.data);
         } else if (payload.type === 'secret-word') {
-            showSecretWord(payload.data.word, payload.data.isJoker, !!payload.data.breakStreak);
+            showSecretWord(payload.data.word, payload.data.isJoker, payload.data.streakMode || 'found');
         } else if (payload.type === 'final-summary') {
             renderFinalSummary(payload.data);
         } else if (payload.type === 'action' && isHost()) {
@@ -2389,7 +2442,7 @@ gen_easy: ["Bouteille", "Soleil", "Voiture", "Maison", "Fleur", "Chien", "Chat",
                 }
                 broadcastGameState();
             }
-            hostSendSecretWord(true); // un mot passé casse le combo, il ne compte jamais dedans
+            hostSendSecretWord('break'); // un mot passé casse le combo, il ne compte jamais dedans
         } else if (action === 'undo') {
             if (!lastFoundAction || lastFoundAction.playerId !== fromId) return;
             gameState.scores[lastFoundAction.team] -= lastFoundAction.points;
@@ -2402,7 +2455,7 @@ gen_easy: ["Bouteille", "Soleil", "Voiture", "Maison", "Fleur", "Chien", "Chat",
             lastFoundAction = null;
             gameState.hasUndo = false;
             broadcastGameState();
-            hostSendSecretWord();
+            hostSendSecretWord('undo');
         } else if (action === 'timeout') {
             if (gameState.isPaused) return; // on ignore un timeout qui arriverait pendant une pause
             hostAdvanceTurn();
@@ -2493,6 +2546,7 @@ gen_easy: ["Bouteille", "Soleil", "Voiture", "Maison", "Fleur", "Chien", "Chat",
         // l'affichage normal des caméras.
         document.body.classList.toggle('video-compact', state.phase === 'playing' && !!state.turnReady);
         updateVideoTileLabels();
+        updateHeaderFooterPlacement(state.phase !== 'lobby');
 
         ['game-waiting-view', 'round-intro-view', 'game-active-view', 'round-end-view', 'final-view'].forEach(id => {
             document.getElementById(id).style.display = 'none';
@@ -2599,23 +2653,30 @@ gen_easy: ["Bouteille", "Soleil", "Voiture", "Maison", "Fleur", "Chien", "Chat",
         }
     }
 
-    function showSecretWord(word, isJoker, breakStreak) {
+    // Le combo (currentStreak) ne doit refléter QUE des mots réellement trouvés d'affilée :
+    // - 'found' : mot précédent trouvé → incrémente le combo
+    // - 'break' : mot précédent passé → casse le combo (remis à 0), ne compte jamais dedans
+    // - 'undo'  : annulation du dernier mot trouvé → on retire son point du combo, sans le
+    //             remettre à zéro (les mots trouvés avant lui restent acquis), et sans déclencher
+    //             de nouveau toast puisque ce n'est pas une nouvelle réussite
+    function showSecretWord(word, isJoker, streakMode) {
         const wordCard = document.getElementById('word-card');
         wordCard.classList.remove('locked');
         wordCard.innerText = isJoker ? `🃏 ${word}` : word;
         clearTimeout(actionLockFailsafe);
         lockActionButtons(false);
 
-        if (breakStreak) {
-            // Un mot passé casse le combo : il ne doit jamais compter dedans.
+        if (streakMode === 'break') {
             currentStreak = 0;
+        } else if (streakMode === 'undo') {
+            currentStreak = Math.max(0, currentStreak - 1);
         } else {
             currentStreak++;
         }
 
         if (isJoker) {
             showGameToast('🃏 MOT JOKER ! +2', 'joker');
-        } else if (!breakStreak && currentStreak >= 3) {
+        } else if (streakMode === 'found' && currentStreak >= 3) {
             showGameToast(`🔥 Combo x${currentStreak}`, 'combo');
         }
     }
@@ -2801,6 +2862,7 @@ gen_easy: ["Bouteille", "Soleil", "Voiture", "Maison", "Fleur", "Chien", "Chat",
         document.getElementById('final-view').style.display = 'none';
         setSpotlightPlayer(null);
         document.body.classList.remove('video-compact');
+        updateHeaderFooterPlacement(false);
     }
 
 </script>
