@@ -2,7 +2,11 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0f172a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
 <title>Rush'Up! Live - Salon vidéo</title>
 <style>
     :root {
@@ -21,16 +25,30 @@
 
     * { box-sizing: border-box; }
 
+    html {
+        touch-action: pan-y;
+        -webkit-text-size-adjust: 100%;
+    }
+
     body {
         margin: 0;
         min-height: 100vh;
+        min-height: 100dvh;
         background: linear-gradient(160deg, var(--bg), var(--bg-alt));
         color: var(--text-main);
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         display: flex;
         flex-direction: column;
         align-items: center;
-        padding: 20px 16px 60px;
+        padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(60px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+        overscroll-behavior-y: contain;
+        -webkit-user-select: none;
+        user-select: none;
+    }
+
+    input, textarea {
+        -webkit-user-select: text;
+        user-select: text;
     }
 
     h1 {
@@ -103,6 +121,8 @@
         position: relative;
         overflow: hidden;
         color: white;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
     }
 
     .btn::after {
@@ -183,6 +203,25 @@
         gap: 10px;
     }
 
+    .connection-banner {
+        width: 100%;
+        background: rgba(245,158,11,0.15);
+        border: 1px solid var(--warning);
+        color: var(--warning);
+        border-radius: var(--radius-sm);
+        padding: 10px 14px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        text-align: center;
+        margin: -8px 0 14px;
+    }
+
+    .connection-banner.network-hint {
+        background: rgba(59,130,246,0.15);
+        border-color: #3b82f6;
+        color: #93c5fd;
+    }
+
     .room-code-badge {
         background: rgba(255,255,255,0.08);
         border: 1px solid var(--card-border);
@@ -218,6 +257,40 @@
         grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
         gap: 12px;
         width: 100%;
+        transition: all 0.2s ease;
+    }
+
+    /* Mode compact : activé automatiquement pendant un tour actif pour que le mot à deviner
+       et les boutons Trouvé/Passer restent visibles sans scroll sur un petit écran de téléphone.
+       Les webcams des autres joueurs restent toutes visibles, mais en bandeau défilant réduit. */
+    body.video-compact #spotlight-area {
+        max-height: 18vh;
+        margin-bottom: 6px;
+    }
+
+    body.video-compact #spotlight-area .video-tile {
+        max-height: 18vh;
+    }
+
+    body.video-compact #video-grid {
+        display: flex;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        gap: 8px;
+        padding-bottom: 4px;
+        margin-bottom: 10px;
+    }
+
+    body.video-compact #video-grid .video-tile {
+        flex: 0 0 auto;
+        width: 72px;
+        aspect-ratio: 1 / 1;
+    }
+
+    body.video-compact #video-grid .name-tag {
+        font-size: 0.6rem;
+        padding: 2px 4px;
     }
 
     .video-tile {
@@ -231,6 +304,44 @@
 
     .video-tile.self { border-color: var(--success); }
     .video-tile.speaking { border-color: var(--warning); }
+
+    /* Liseré coloré par équipe une fois la partie lancée, pour identifier ses coéquipiers
+       d'un coup d'œil parmi toutes les webcams. */
+    .video-tile.team-1:not(.self) { border-color: #f43f5e; }
+    .video-tile.team-2:not(.self) { border-color: #3b82f6; }
+    .video-tile.team-3:not(.self) { border-color: #eab308; }
+
+    .tile-sameroom-btn {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(15,23,42,0.75);
+        color: var(--text-main);
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .tile-sameroom-btn.muted {
+        background: var(--warning);
+        color: #0f172a;
+    }
+
+    body.video-compact .tile-sameroom-btn {
+        width: 20px;
+        height: 20px;
+        font-size: 0.65rem;
+        top: 3px;
+        right: 3px;
+    }
 
     .video-tile.reconnecting { border-color: var(--warning); animation: pulse-reconnect 1.2s infinite; }
     .video-tile.reconnecting::after {
@@ -299,6 +410,8 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
     }
 
     .control-btn.off {
@@ -310,6 +423,14 @@
         font-size: 0.85rem;
         color: var(--text-muted);
         margin-top: 16px;
+    }
+
+    .sameroom-hint {
+        font-size: 0.72rem;
+        color: var(--text-muted);
+        text-align: center;
+        margin-top: 8px;
+        max-width: 320px;
     }
 
     .setup-note {
@@ -526,7 +647,8 @@
     .pause-toggle-btn:active { transform: scale(0.92); }
 
     .word-card {
-        background: linear-gradient(135deg, var(--primary), #ff6348);
+        background: #ffffff;
+        color: #0f172a;
         border-radius: var(--radius);
         padding: 30px 16px;
         text-align: center;
@@ -548,9 +670,17 @@
 
     .game-action-btns {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr 1.3fr;
         gap: 10px;
         margin-bottom: 18px;
+    }
+
+    /* Boutons de jeu agrandis : ce sont les plus tapés pendant la partie, sur mobile ils
+       doivent rester faciles à toucher au pouce sans viser précisément. */
+    .game-action-btns .btn {
+        min-height: 62px;
+        padding: 14px 12px;
+        font-size: 1.15rem;
     }
 
     .scoreboard {
@@ -585,6 +715,16 @@
         padding: 12px 14px;
         color: var(--text-main);
         font-size: 0.95rem;
+    }
+
+    .select-blue,
+    .select-blue option {
+        background: #1d4ed8;
+        color: #ffffff;
+    }
+
+    .select-blue {
+        border-color: #1d4ed8;
     }
 
     .checkbox-row {
@@ -664,6 +804,12 @@
 
     .turn-confirm-team {
         font-size: 0.85rem;
+        color: var(--text-muted);
+        margin-bottom: 4px;
+    }
+
+    .turn-confirm-teammates {
+        font-size: 0.8rem;
         color: var(--text-muted);
         margin-bottom: 14px;
     }
@@ -804,9 +950,9 @@
 </head>
 <body>
 
-<div id="app-header">
-    <h1>🎥 Rush'Up! Live</h1>
-    <div class="subtitle">Étape 2/3 — Salon vidéo + partie synchronisée (Supabase Realtime + WebRTC)</div>
+<div id="app-header" style="width:100%; text-align:center;">
+    <h1 style="text-align:center;">🎥 Rush'Up! Live</h1>
+    <div class="subtitle">Assurez-vous d'avoir une bonne connexion et prévoyez environ 10 à 15 minutes devant vous !</div>
 </div>
 
 <!-- ÉCRAN 1 : Entrée dans un salon -->
@@ -824,7 +970,7 @@
         <h2 style="text-align:center; margin: 0 0 18px; font-size: 1.1rem;">🆕 Créer un salon</h2>
         <div class="config-group">
             <label for="create-name-input">Ton prénom</label>
-            <input type="text" id="create-name-input" placeholder="Ex: Léo" maxlength="20">
+            <input type="text" id="create-name-input" placeholder="Ex: Jack" maxlength="20">
         </div>
         <button class="btn btn-primary" onclick="createRoom()">Créer le salon (tu seras l'hôte)</button>
         <button class="btn btn-secondary" onclick="backToEntryChoice()">◀️ Retour</button>
@@ -835,7 +981,7 @@
         <h2 style="text-align:center; margin: 0 0 18px; font-size: 1.1rem;">🚪 Rejoindre un salon</h2>
         <div class="config-group">
             <label for="join-name-input">Ton prénom</label>
-            <input type="text" id="join-name-input" placeholder="Ex: Léo" maxlength="20">
+            <input type="text" id="join-name-input" placeholder="Ex: Jack" maxlength="20">
         </div>
         <div class="config-group">
             <label for="join-code-input">Code du salon</label>
@@ -854,6 +1000,14 @@
         <button class="leave-btn" onclick="leaveRoom()">🚪 Quitter le salon</button>
     </div>
 
+    <div id="connection-banner" class="connection-banner" style="display:none;">
+        🔄 Connexion perdue, tentative de reconnexion...
+    </div>
+
+    <div id="network-hint-banner" class="connection-banner network-hint" style="display:none;">
+        📶 Connexion lente détectée — coupe ta caméra (📹) pour fluidifier la partie
+    </div>
+
     <div id="video-zone">
         <div id="spotlight-area"></div>
         <div id="video-grid"></div>
@@ -863,6 +1017,7 @@
         <button class="control-btn" id="toggle-mic-btn" onclick="toggleMic()" aria-label="Micro">🎤</button>
         <button class="control-btn" id="toggle-cam-btn" onclick="toggleCam()" aria-label="Caméra">📹</button>
     </div>
+    <div class="sameroom-hint">💡 Tape le 🔊 sur la webcam d'un joueur avec qui tu es dans la même pièce pour couper son son et éviter le larsen.</div>
 
     <div class="participant-count" id="participant-count">1 participant</div>
 
@@ -914,7 +1069,7 @@
 
                 <div class="config-group">
                     <label>Passer les cartes</label>
-                    <select id="passrule-select" class="theme-select">
+                    <select id="passrule-select" class="theme-select select-blue">
                         <option value="byRound" selected>Par défaut (interdit en manche 1, autorisé ensuite)</option>
                         <option value="always">Toujours autoriser</option>
                         <option value="never">Toujours interdire</option>
@@ -926,7 +1081,7 @@
                     <label for="penalty-toggle">Pénalité de temps au passage</label>
                 </div>
                 <div id="penalty-dropdown-container" style="display:none; margin: -6px 0 14px 28px;">
-                    <select id="penalty-seconds-select" class="theme-select">
+                    <select id="penalty-seconds-select" class="theme-select select-blue">
                         <option value="1">1 seconde</option><option value="2">2 secondes</option><option value="3">3 secondes</option>
                         <option value="4">4 secondes</option><option value="5" selected>5 secondes</option><option value="6">6 secondes</option>
                         <option value="7">7 secondes</option><option value="8">8 secondes</option><option value="9">9 secondes</option>
@@ -966,6 +1121,7 @@
                     <div class="turn-confirm-title">C'est au tour de</div>
                     <div class="turn-confirm-name" id="turn-confirm-name">—</div>
                     <div class="turn-confirm-team" id="turn-confirm-team">—</div>
+                    <div class="turn-confirm-teammates" id="turn-confirm-teammates"></div>
                     <button class="btn btn-primary" id="turn-confirm-ready-btn" onclick="sendPlayerAction('ready')" style="display:none;">🚀 C'est parti !</button>
                     <div class="waiting-text" id="turn-confirm-wait-text" style="display:none;">En attente que ce joueur confirme...</div>
                 </div>
@@ -984,7 +1140,7 @@
                 <div class="word-card locked" id="word-card">En attente...</div>
                 <div class="game-action-btns" id="game-action-btns" style="display:none;">
                     <button class="btn btn-primary" id="pass-btn" onclick="sendPlayerAction('pass')">↩️ Passer</button>
-                    <button class="btn btn-success" onclick="sendPlayerAction('found')">✅ Trouvé !</button>
+                    <button class="btn btn-success" id="found-btn" onclick="sendPlayerAction('found')">✅ Trouvé !</button>
                 </div>
                 <button class="undo-link" id="undo-btn" onclick="sendPlayerAction('undo')" style="display:none;">↺ Annuler le dernier mot trouvé</button>
             </div>
@@ -1123,8 +1279,21 @@
     async function connectToRoom(statusElId) {
         setStatus(statusElId, 'Activation de la caméra...', null);
 
+        // Résolution volontairement réduite : avec 4 à 6 flux WebRTC simultanés en même
+        // temps sur un téléphone, une caméra en 1080p par défaut plombe batterie/CPU/data
+        // pour un gain de qualité invisible sur des petites vignettes.
+        const videoConstraints = {
+            width: { ideal: 480, max: 640 },
+            height: { ideal: 360, max: 480 },
+            frameRate: { ideal: 20, max: 24 },
+            facingMode: 'user'
+        };
+
         try {
-            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            localStream = await navigator.mediaDevices.getUserMedia({
+                video: videoConstraints,
+                audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+            });
         } catch (err) {
             setStatus(statusElId, "Impossible d'accéder à la caméra/micro. Vérifie les autorisations du navigateur.", 'error');
             return;
@@ -1148,15 +1317,59 @@
         channel.on('broadcast', { event: 'webrtc-signal' }, ({ payload }) => handleSignal(payload));
         channel.on('broadcast', { event: 'game-msg' }, ({ payload }) => handleGameMessage(payload));
 
+        let hasConnectedOnce = false;
+
         channel.subscribe(async (status) => {
             if (status === 'SUBSCRIBED') {
                 await channel.track({ id: myId, name: myName, joinedAt: Date.now() });
-                showScreen('room-screen');
-                setStatus(statusElId, '', null);
-            } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-                setStatus(statusElId, 'Connexion au salon impossible. Vérifie ta configuration Supabase.', 'error');
+                if (!hasConnectedOnce) {
+                    hasConnectedOnce = true;
+                    showScreen('room-screen');
+                    setStatus(statusElId, '', null);
+                    checkNetworkQuality();
+                    const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+                    if (conn && conn.addEventListener) conn.addEventListener('change', checkNetworkQuality);
+                } else {
+                    // Reconnexion après une coupure réseau (wifi/4G) : on masque la bannière
+                    // d'alerte, la présence vient d'être re-signalée aux autres joueurs ci-dessus.
+                    setConnectionBanner(false);
+                }
+            } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+                if (!hasConnectedOnce) {
+                    setStatus(statusElId, 'Connexion au salon impossible. Vérifie ta configuration Supabase.', 'error');
+                } else {
+                    // On était déjà en pleine partie : on prévient plutôt que de laisser
+                    // l'écran figé sans explication (fréquent sur mobile en 4G/5G).
+                    setConnectionBanner(true);
+                }
             }
         });
+    }
+
+    function setConnectionBanner(show) {
+        const banner = document.getElementById('connection-banner');
+        if (banner) banner.style.display = show ? 'block' : 'none';
+    }
+
+    // --- DÉTECTION RÉSEAU LENT ---
+    // Suggère de couper sa caméra sur une connexion mobile faible (économise data/CPU et évite
+    // les flux vidéo qui saccadent en pleine partie). Non disponible sur Safari iOS : dégrade
+    // silencieusement, sans bloquer le reste.
+    let networkHintShown = false;
+
+    function checkNetworkQuality() {
+        const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        if (!conn) return;
+        const isSlow = conn.saveData || ['slow-2g', '2g'].includes(conn.effectiveType);
+        const banner = document.getElementById('network-hint-banner');
+        if (!banner) return;
+        if (isSlow && camOn && !networkHintShown) {
+            networkHintShown = true;
+            banner.style.display = 'block';
+            setTimeout(() => { banner.style.display = 'none'; }, 8000);
+        } else if (!isSlow) {
+            banner.style.display = 'none';
+        }
     }
 
     function showScreen(id) {
@@ -1164,7 +1377,97 @@
         document.getElementById(id).classList.add('active');
         // Le bandeau titre ne sert qu'à l'écran d'accueil : on le masque en salon pour gagner de la place.
         document.getElementById('app-header').style.display = (id === 'entry-screen') ? 'block' : 'none';
+
+        // Empêche l'écran de se verrouiller pendant qu'on est en salon (webcam + partie) :
+        // un écran qui s'éteint casse le chrono et la vidéo en pleine partie sur mobile.
+        if (id === 'room-screen') requestWakeLock();
+        else releaseWakeLock();
     }
+
+    // Confirmation avant de fermer/recharger l'onglet par erreur (swipe, geste accidentel...) :
+    // ne s'affiche que quand on est effectivement dans un salon, pas sur l'écran d'accueil.
+    window.addEventListener('beforeunload', (e) => {
+        if (document.getElementById('room-screen').classList.contains('active')) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
+
+    // --- WAKE LOCK (empêche la mise en veille de l'écran) ---
+    let wakeLock = null;
+    let noSleepVideo = null;
+
+    // Base64 d'une micro-vidéo mp4 (noire, silencieuse, 1s) générée localement : technique de
+    // repli pour empêcher la mise en veille sur les navigateurs qui ne supportent pas encore
+    // la Wake Lock API (ex : Safari iOS < 16.4). Aucune requête réseau nécessaire.
+    const NOSLEEP_VIDEO_SRC = 'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAARnbW9vdgAAAGxtdmhkAAAAAAAAAAAAAAAAAAAD6AAAA+gAAQAAAQAA';
+
+    function startNoSleepFallback() {
+        if (!noSleepVideo) {
+            noSleepVideo = document.createElement('video');
+            noSleepVideo.setAttribute('muted', '');
+            noSleepVideo.setAttribute('playsinline', '');
+            noSleepVideo.setAttribute('webkit-playsinline', '');
+            noSleepVideo.muted = true;
+            noSleepVideo.loop = true;
+            noSleepVideo.style.cssText = 'position:fixed; width:1px; height:1px; opacity:0; pointer-events:none;';
+            noSleepVideo.src = NOSLEEP_VIDEO_SRC;
+            document.body.appendChild(noSleepVideo);
+        }
+        noSleepVideo.play().catch(() => {}); // le navigateur peut refuser hors interaction utilisateur, pas bloquant
+    }
+
+    function stopNoSleepFallback() {
+        if (noSleepVideo) noSleepVideo.pause();
+    }
+
+    async function requestWakeLock() {
+        if (!('wakeLock' in navigator)) {
+            startNoSleepFallback();
+            return;
+        }
+        if (wakeLock) return;
+        try {
+            wakeLock = await navigator.wakeLock.request('screen');
+            wakeLock.addEventListener('release', () => { wakeLock = null; });
+        } catch (err) {
+            // Pas bloquant : certains navigateurs/refus ponctuels (ex: onglet en arrière-plan)
+            wakeLock = null;
+        }
+    }
+
+    function releaseWakeLock() {
+        if (wakeLock) {
+            wakeLock.release().catch(() => {});
+            wakeLock = null;
+        }
+        stopNoSleepFallback();
+    }
+
+    // Le wake lock est automatiquement relâché par le navigateur quand l'onglet passe en
+    // arrière-plan ; on le redemande au retour si on est toujours en salon.
+    // On profite du même événement pour vérifier les connexions vidéo : sur mobile, un
+    // appel entrant ou un changement d'app coupe parfois les flux caméra/micro sans prévenir.
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState !== 'visible') return;
+        if (!document.getElementById('room-screen').classList.contains('active')) return;
+
+        requestWakeLock();
+
+        // Réactive les pistes locales si le navigateur les a coupées en arrière-plan
+        if (localStream) {
+            localStream.getAudioTracks().forEach(t => { t.enabled = micOn; });
+            localStream.getVideoTracks().forEach(t => { t.enabled = camOn; });
+        }
+
+        // Relance une connexion ICE pour tout pair qui ne serait pas "connected"
+        Object.keys(peerConnections).forEach(peerId => {
+            const pc = peerConnections[peerId];
+            if (pc && pc.connectionState !== 'connected') {
+                attemptIceRestart(peerId);
+            }
+        });
+    });
 
     // --- PRÉSENCE ---
     let presentPlayers = {}; // id -> name, pour tous les joueurs actuellement connectés
@@ -1258,8 +1561,12 @@
         reconnectAttempts[peerId] = 0;
 
         if (localStream) {
-            localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+            localStream.getTracks().forEach(track => {
+                const sender = pc.addTrack(track, localStream);
+                if (track.kind === 'video') videoSenders[peerId] = sender;
+            });
         }
+        adjustVideoBitrates();
 
         pc.onicecandidate = (event) => {
             if (event.candidate) {
@@ -1372,10 +1679,34 @@
             peerConnections[peerId].close();
             delete peerConnections[peerId];
         }
+        delete videoSenders[peerId];
         delete remoteNames[peerId];
         clearTimeout(reconnectTimers[peerId]);
         delete reconnectTimers[peerId];
         delete reconnectAttempts[peerId];
+        adjustVideoBitrates();
+    }
+
+    // Plus il y a de joueurs connectés en simultané, plus l'envoi vidéo (mesh = 1 flux par pair)
+    // coûte cher en data/CPU/batterie sur un téléphone. On réduit le débit maximum par flux à
+    // mesure que le groupe grandit — la qualité perd un peu, mais reste largement suffisante
+    // pour des vignettes de quelques centimètres.
+    const videoSenders = {}; // peerId -> RTCRtpSender (piste vidéo)
+
+    function adjustVideoBitrates() {
+        const peerCount = Object.keys(peerConnections).length;
+        let maxBitrate;
+        if (peerCount <= 2) maxBitrate = 350000;
+        else if (peerCount <= 4) maxBitrate = 220000;
+        else maxBitrate = 140000;
+
+        Object.values(videoSenders).forEach(sender => {
+            if (!sender || !sender.setParameters) return;
+            const params = sender.getParameters();
+            if (!params.encodings || params.encodings.length === 0) params.encodings = [{}];
+            params.encodings[0].maxBitrate = maxBitrate;
+            sender.setParameters(params).catch(() => {}); // pas bloquant si le navigateur refuse
+        });
     }
 
     // --- AFFICHAGE VIDÉO ---
@@ -1385,11 +1716,13 @@
             tile = document.createElement('div');
             tile.id = `tile-${id}`;
             tile.className = 'video-tile' + (isSelf ? ' self' : ' remote');
+            tile.dataset.playerName = name;
 
             const video = document.createElement('video');
             video.autoplay = true;
             video.playsInline = true;
             if (isSelf) video.muted = true;
+            else video.muted = sameRoomPeers.has(id); // évite le larsen pour les joueurs marqués "même pièce"
 
             const nameTag = document.createElement('div');
             nameTag.className = 'name-tag';
@@ -1397,14 +1730,28 @@
 
             tile.appendChild(video);
             tile.appendChild(nameTag);
+
+            if (!isSelf) {
+                const sameRoomBtn = document.createElement('button');
+                sameRoomBtn.className = 'tile-sameroom-btn';
+                sameRoomBtn.type = 'button';
+                sameRoomBtn.innerText = '🔊';
+                sameRoomBtn.title = "Cette personne est avec toi dans la même pièce (coupe son son, évite le larsen)";
+                sameRoomBtn.onclick = (e) => { e.stopPropagation(); toggleSameRoomPeer(id); };
+                tile.appendChild(sameRoomBtn);
+            }
+
             const targetContainer = (id === currentSpotlightId)
                 ? document.getElementById('spotlight-area')
                 : document.getElementById('video-grid');
             targetContainer.appendChild(tile);
+        } else {
+            tile.dataset.playerName = name;
         }
         tile.querySelector('video').srcObject = stream;
         updateParticipantCount();
         updateOthersTileSize();
+        updateVideoTileLabels();
     }
 
     function removeVideoTile(id) {
@@ -1416,6 +1763,30 @@
             document.getElementById('video-grid').classList.remove('has-spotlight');
         }
         updateOthersTileSize();
+    }
+
+    // Affiche "Nom · Éq.X" sur chaque vignette dès que les équipes sont connues (une fois la
+    // partie lancée) ; avant ça, seul le nom est affiché. Appelée à chaque état de jeu reçu.
+    function getPlayerTeamNumber(id) {
+        if (!gameState || !gameState.teamRosters) return null;
+        const found = Object.keys(gameState.teamRosters).find(t => gameState.teamRosters[t].includes(id));
+        return found || null;
+    }
+
+    function updateVideoTileLabels() {
+        document.querySelectorAll('.video-tile').forEach(tile => {
+            const id = tile.id.replace('tile-', '');
+            const nameTag = tile.querySelector('.name-tag');
+            if (!nameTag) return;
+            const isSelf = tile.classList.contains('self');
+            const baseName = tile.dataset.playerName || '?';
+            const team = getPlayerTeamNumber(id);
+            const label = isSelf ? `${baseName} (toi)` : baseName;
+            nameTag.innerText = team ? `${label} · Éq.${team}` : label;
+            tile.classList.toggle('team-1', team === '1');
+            tile.classList.toggle('team-2', team === '2');
+            tile.classList.toggle('team-3', team === '3');
+        });
     }
 
     // Rétrécit les vignettes des joueurs non actifs à mesure qu'ils sont nombreux,
@@ -1482,6 +1853,32 @@
         btn.innerText = camOn ? '📹' : '🚫';
     }
 
+    // --- MODE "MÊME PIÈCE" (par joueur) ---
+    // Coupe la lecture audio d'un flux distant précis (pas son envoi, ni celui des autres) :
+    // utile quand seule une partie du groupe est physiquement ensemble — ex. 2 joueurs côte à
+    // côte et 2 joueurs à distance. On ne mute que les webcams des personnes déjà entendues en
+    // vrai, en gardant le son des joueurs distants qui, eux, en ont besoin.
+    let sameRoomPeers = new Set();
+
+    function toggleSameRoomPeer(id) {
+        if (sameRoomPeers.has(id)) sameRoomPeers.delete(id);
+        else sameRoomPeers.add(id);
+
+        const tile = document.getElementById(`tile-${id}`);
+        if (!tile) return;
+        const isMuted = sameRoomPeers.has(id);
+        const video = tile.querySelector('video');
+        if (video) video.muted = isMuted;
+        const btn = tile.querySelector('.tile-sameroom-btn');
+        if (btn) {
+            btn.classList.toggle('muted', isMuted);
+            btn.innerText = isMuted ? '🔇' : '🔊';
+            btn.title = isMuted
+                ? 'Son coupé (même pièce) — retape pour réactiver'
+                : 'Cette personne est avec toi dans la même pièce (coupe son son, évite le larsen)';
+        }
+    }
+
     // --- QUITTER LE SALON ---
     function leaveRoom() {
         if (channel) {
@@ -1499,6 +1896,16 @@
         resetGameState();
         document.getElementById('video-grid').innerHTML = '';
         document.getElementById('spotlight-area').innerHTML = '';
+        setConnectionBanner(false);
+        document.getElementById('network-hint-banner').style.display = 'none';
+        networkHintShown = false;
+        micOn = true;
+        camOn = true;
+        sameRoomPeers.clear();
+        document.getElementById('toggle-mic-btn').classList.remove('off');
+        document.getElementById('toggle-mic-btn').innerText = '🎤';
+        document.getElementById('toggle-cam-btn').classList.remove('off');
+        document.getElementById('toggle-cam-btn').innerText = '📹';
         showScreen('entry-screen');
         backToEntryChoice();
         setStatus('create-status', '', null);
@@ -1610,6 +2017,7 @@ gen_easy: ["Bouteille", "Soleil", "Voiture", "Maison", "Fleur", "Chien", "Chat",
     let gameTimerRAF = null;
     let clockOffset = 0; // écart entre l'horloge de l'hôte et la nôtre (ms), pour un chrono synchronisé
     let currentStreak = 0;
+    let lastAnnouncedTurnId = null; // évite de vibrer en boucle pour la même prise de main
 
     function escapeHtml(str) {
         const div = document.createElement('div');
@@ -1665,7 +2073,7 @@ gen_easy: ["Bouteille", "Soleil", "Voiture", "Maison", "Fleur", "Chien", "Chat",
     function adjustTeamCount(delta) {
         const ids = Object.keys(presentPlayers);
         const maxAllowed = Math.max(2, Math.floor(ids.length / 2)); // au moins 2 joueurs par équipe
-        isConfigTeamCount = Math.max(2, Math.min(6, Math.min(maxAllowed, isConfigTeamCount + delta)));
+        isConfigTeamCount = Math.max(2, Math.min(3, Math.min(maxAllowed, isConfigTeamCount + delta)));
         document.getElementById('team-count-value').innerText = isConfigTeamCount;
         // Les joueurs assignés à une équipe qui n'existe plus retombent en équipe 1
         Object.keys(configTeamAssignments).forEach(id => {
@@ -1704,8 +2112,8 @@ gen_easy: ["Bouteille", "Soleil", "Voiture", "Maison", "Fleur", "Chien", "Chat",
         const startBtn = document.getElementById('start-game-btn');
         const status = document.getElementById('host-config-status');
 
-        // La taille max d'équipe autorisée dépend du nombre de joueurs (2 par équipe minimum)
-        const maxAllowedTeams = Math.max(2, Math.floor(ids.length / 2));
+        // La taille max d'équipe autorisée dépend du nombre de joueurs (2 par équipe minimum, 3 équipes max)
+        const maxAllowedTeams = Math.max(2, Math.min(3, Math.floor(ids.length / 2)));
         if (isConfigTeamCount > maxAllowedTeams) {
             isConfigTeamCount = Math.max(2, maxAllowedTeams);
             const teamValueEl = document.getElementById('team-count-value');
@@ -1888,15 +2296,15 @@ gen_easy: ["Bouteille", "Soleil", "Voiture", "Maison", "Fleur", "Chien", "Chat",
         applyGameState(gameState); // l'hôte s'applique aussi l'état à lui-même (décalage = 0, c'est la référence)
     }
 
-    function hostSendSecretWord() {
+    function hostSendSecretWord(breakStreak) {
         if (hostDeck.length === 0) return; // ne devrait pas arriver : hostEndRound() est appelé avant
         const word = hostDeck[0];
         const isJoker = jokerWord !== null && word === jokerWord;
-        sendGameMsg(gameState.activePlayerId, 'secret-word', { word, isJoker });
+        sendGameMsg(gameState.activePlayerId, 'secret-word', { word, isJoker, breakStreak: !!breakStreak });
         if (gameState.activePlayerId === myId) {
             // Le canal ne renvoie pas ses propres messages (self: false) :
             // si l'hôte est lui-même le joueur actif, on s'applique le mot directement.
-            showSecretWord(word, isJoker);
+            showSecretWord(word, isJoker, !!breakStreak);
         }
     }
 
@@ -1909,7 +2317,7 @@ gen_easy: ["Bouteille", "Soleil", "Voiture", "Maison", "Fleur", "Chien", "Chat",
             }
             applyGameState(payload.data);
         } else if (payload.type === 'secret-word') {
-            showSecretWord(payload.data.word, payload.data.isJoker);
+            showSecretWord(payload.data.word, payload.data.isJoker, !!payload.data.breakStreak);
         } else if (payload.type === 'final-summary') {
             renderFinalSummary(payload.data);
         } else if (payload.type === 'action' && isHost()) {
@@ -1978,7 +2386,7 @@ gen_easy: ["Bouteille", "Soleil", "Voiture", "Maison", "Fleur", "Chien", "Chat",
                 }
                 broadcastGameState();
             }
-            hostSendSecretWord();
+            hostSendSecretWord(true); // un mot passé casse le combo, il ne compte jamais dedans
         } else if (action === 'undo') {
             if (!lastFoundAction || lastFoundAction.playerId !== fromId) return;
             gameState.scores[lastFoundAction.team] -= lastFoundAction.points;
@@ -2077,6 +2485,12 @@ gen_easy: ["Bouteille", "Soleil", "Voiture", "Maison", "Fleur", "Chien", "Chat",
     function applyGameState(state) {
         gameState = state;
 
+        // Webcams en bandeau compact uniquement pendant un tour vraiment actif (mot affiché) :
+        // le reste du temps (lobby, intro, confirmation de tour, fin de manche...) on garde
+        // l'affichage normal des caméras.
+        document.body.classList.toggle('video-compact', state.phase === 'playing' && !!state.turnReady);
+        updateVideoTileLabels();
+
         ['game-waiting-view', 'round-intro-view', 'game-active-view', 'round-end-view', 'final-view'].forEach(id => {
             document.getElementById(id).style.display = 'none';
         });
@@ -2117,10 +2531,22 @@ gen_easy: ["Bouteille", "Soleil", "Voiture", "Maison", "Fleur", "Chien", "Chat",
                 document.getElementById('turn-active-view').style.display = 'none';
                 document.getElementById('turn-confirm-name').innerText = activeName;
                 document.getElementById('turn-confirm-team').innerText = `Équipe ${activeTeamNum}`;
+                const teammates = (state.teamRosters && state.teamRosters[activeTeamNum]) ? state.teamRosters[activeTeamNum]
+                    .map(id => presentPlayers[id] || remoteNames[id] || (id === myId ? myName : '?'))
+                    .join(', ') : '';
+                document.getElementById('turn-confirm-teammates').innerText = teammates ? `Joueurs de l'équipe ${activeTeamNum} : ${teammates}` : '';
                 document.getElementById('turn-confirm-ready-btn').style.display = isMyTurn ? 'block' : 'none';
                 document.getElementById('turn-confirm-wait-text').style.display = isMyTurn ? 'none' : 'block';
                 if (gameTimerRAF) cancelAnimationFrame(gameTimerRAF);
                 currentStreak = 0;
+                clearTimeout(actionLockFailsafe);
+                lockActionButtons(false);
+                // Alerte le joueur que c'est à lui, une seule fois par prise de main (utile s'il ne
+                // regarde pas l'écran entre deux tours pendant qu'un coéquipier joue).
+                if (isMyTurn && lastAnnouncedTurnId !== state.activePlayerId) {
+                    vibrate([40, 80, 40]);
+                }
+                lastAnnouncedTurnId = state.activePlayerId;
                 return;
             }
 
@@ -2131,7 +2557,7 @@ gen_easy: ["Bouteille", "Soleil", "Voiture", "Maison", "Fleur", "Chien", "Chat",
             document.getElementById('active-team-name').innerText = `Équipe ${activeTeamNum}`;
 
             document.getElementById('game-action-btns').style.display = (isMyTurn && !state.isPaused) ? 'grid' : 'none';
-            document.getElementById('pass-btn').style.display = isPassAllowed() ? 'block' : 'none';
+            document.getElementById('pass-btn').disabled = actionLocked || !isPassAllowed();
             document.getElementById('undo-btn').style.display = (isMyTurn && state.hasUndo && !state.isPaused) ? 'block' : 'none';
             const pauseBtn = document.getElementById('pause-btn');
             pauseBtn.style.display = isMyTurn ? 'flex' : 'none';
@@ -2170,15 +2596,23 @@ gen_easy: ["Bouteille", "Soleil", "Voiture", "Maison", "Fleur", "Chien", "Chat",
         }
     }
 
-    function showSecretWord(word, isJoker) {
+    function showSecretWord(word, isJoker, breakStreak) {
         const wordCard = document.getElementById('word-card');
         wordCard.classList.remove('locked');
         wordCard.innerText = isJoker ? `🃏 ${word}` : word;
+        clearTimeout(actionLockFailsafe);
+        lockActionButtons(false);
 
-        currentStreak++;
+        if (breakStreak) {
+            // Un mot passé casse le combo : il ne doit jamais compter dedans.
+            currentStreak = 0;
+        } else {
+            currentStreak++;
+        }
+
         if (isJoker) {
             showGameToast('🃏 MOT JOKER ! +2', 'joker');
-        } else if (currentStreak >= 3) {
+        } else if (!breakStreak && currentStreak >= 3) {
             showGameToast(`🔥 Combo x${currentStreak}`, 'combo');
         }
     }
@@ -2252,9 +2686,12 @@ gen_easy: ["Bouteille", "Soleil", "Voiture", "Maison", "Fleur", "Chien", "Chat",
         arrow.innerText = body.classList.contains('open') ? '▴' : '▾';
     }
 
+    let warned3s = false;
+
     function restartTimerLoop(state) {
         if (gameTimerRAF) cancelAnimationFrame(gameTimerRAF);
         const display = document.getElementById('game-timer-display');
+        warned3s = false;
 
         if (state.isPaused) {
             // Chrono gelé : on affiche le temps restant au moment de la pause, sans boucle qui tourne.
@@ -2273,8 +2710,16 @@ gen_easy: ["Bouteille", "Soleil", "Voiture", "Maison", "Fleur", "Chien", "Chat",
             display.innerText = `${remaining}s`;
             display.classList.toggle('warning', remaining <= 10);
 
+            // Petit buzz d'alerte à 3 secondes : utile sur mobile quand on ne regarde plus l'écran
+            // en pleine partie (webcam / coéquipiers).
+            if (remaining <= 3 && remaining > 0 && !warned3s && state.activePlayerId === myId) {
+                warned3s = true;
+                vibrate([25, 60, 25, 60, 25]);
+            }
+
             if (remaining <= 0) {
                 if (state.activePlayerId === myId) {
+                    vibrate(150);
                     sendPlayerAction('timeout');
                 }
                 return; // on arrête la boucle locale : un nouvel état arrivera de l'hôte
@@ -2289,10 +2734,42 @@ gen_easy: ["Bouteille", "Soleil", "Voiture", "Maison", "Fleur", "Chien", "Chat",
         sendPlayerAction(gameState.isPaused ? 'resume' : 'pause');
     }
 
+    // --- VIBRATION (retour haptique mobile) ---
+    function vibrate(pattern) {
+        if (navigator.vibrate) {
+            try { navigator.vibrate(pattern); } catch (err) { /* pas bloquant */ }
+        }
+    }
+
+    // --- ANTI DOUBLE-TAP ---
+    // Un tap rapide/accidentel sur "Trouvé" ou "Passer" ne doit jamais partir deux fois avant
+    // que le mot suivant n'arrive (ça compterait double au score). On verrouille les boutons
+    // immédiatement au tap, et on les déverrouille dès que le nouveau mot est affiché — avec un
+    // filet de sécurité au cas où le réseau traînerait.
+    let actionLocked = false;
+    let actionLockFailsafe = null;
+
+    function lockActionButtons(locked) {
+        actionLocked = locked;
+        const foundBtn = document.getElementById('found-btn');
+        const passBtn = document.getElementById('pass-btn');
+        if (foundBtn) foundBtn.disabled = locked;
+        if (passBtn) passBtn.disabled = locked || !isPassAllowed();
+    }
+
     function sendPlayerAction(action) {
         if (gameState.activePlayerId !== myId) return;
+        if ((action === 'found' || action === 'pass') && actionLocked) return;
         if (action === 'undo') {
             document.getElementById('undo-btn').style.display = 'none';
+        }
+        if (action === 'found') vibrate(35);
+        else if (action === 'pass') vibrate([20, 40, 20]);
+        else if (action === 'ready') vibrate(15);
+        if (action === 'found' || action === 'pass') {
+            lockActionButtons(true);
+            clearTimeout(actionLockFailsafe);
+            actionLockFailsafe = setTimeout(() => lockActionButtons(false), 2500);
         }
         if (isHost()) {
             handlePlayerAction(myId, action);
@@ -2310,6 +2787,9 @@ gen_easy: ["Bouteille", "Soleil", "Voiture", "Maison", "Fleur", "Chien", "Chat",
         wordFoundLog = [];
         clockOffset = 0;
         currentStreak = 0;
+        lastAnnouncedTurnId = null;
+        clearTimeout(actionLockFailsafe);
+        actionLocked = false;
         configTeamAssignments = {};
         document.getElementById('game-waiting-view').style.display = 'block';
         document.getElementById('game-active-view').style.display = 'none';
@@ -2317,6 +2797,7 @@ gen_easy: ["Bouteille", "Soleil", "Voiture", "Maison", "Fleur", "Chien", "Chat",
         document.getElementById('round-end-view').style.display = 'none';
         document.getElementById('final-view').style.display = 'none';
         setSpotlightPlayer(null);
+        document.body.classList.remove('video-compact');
     }
 
 </script>
