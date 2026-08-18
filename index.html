@@ -425,12 +425,14 @@
         margin-top: 16px;
     }
 
-    .sameroom-hint {
-        font-size: 0.72rem;
+    .room-footer {
+        width: 100%;
+        font-size: 0.7rem;
         color: var(--text-muted);
         text-align: center;
-        margin-top: 8px;
-        max-width: 320px;
+        margin-top: 24px;
+        padding-top: 14px;
+        border-top: 1px solid var(--card-border);
     }
 
     .setup-note {
@@ -1017,7 +1019,6 @@
         <button class="control-btn" id="toggle-mic-btn" onclick="toggleMic()" aria-label="Micro">🎤</button>
         <button class="control-btn" id="toggle-cam-btn" onclick="toggleCam()" aria-label="Caméra">📹</button>
     </div>
-    <div class="sameroom-hint">💡 Tape le 🔊 sur la webcam d'un joueur avec qui tu es dans la même pièce pour couper son son et éviter le larsen.</div>
 
     <div class="participant-count" id="participant-count">1 participant</div>
 
@@ -1174,6 +1175,8 @@
             <div id="final-wait-text" class="waiting-text" style="display:none;">En attente de l'hôte...</div>
         </div>
     </div>
+
+    <footer class="room-footer">💡 Tape le 🔊 sur la webcam d'un joueur avec qui tu es dans la même pièce pour couper son son et éviter le larsen.</footer>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
