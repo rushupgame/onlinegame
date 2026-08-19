@@ -1393,7 +1393,7 @@
 
     <footer class="room-footer">
         <div class="room-footer-controls" id="room-footer-controls"></div>
-        <div class="sameroom-hint-text">💡 Tape le 🔊 sur la webcam d'un joueur avec qui tu es dans la même pièce : ça coupe le son dans les 2 sens avec lui (fini le larsen, même si le volume Android ne descend pas assez bas).</div>
+        <div class="sameroom-hint-text">💡 Le larsen est coupé automatiquement entre les joueurs qui sont physiquement dans la même pièce (détection par ultrasons, aucune action à faire). Le 🔊 sur une webcam permet de forcer manuellement si besoin.</div>
     </footer>
 
     <div id="reactions-fly-layer"></div>
@@ -1537,6 +1537,12 @@
 
         document.getElementById('room-code-display').innerText = roomCode;
         addVideoTile(myId, myName, localStream, true);
+
+        // Démarre la détection auto "même pièce" (émission + écoute ultrasons) : dès que
+        // deux joueurs sont physiquement proches, le larsen sera coupé tout seul, sans
+        // qu'ils aient à toucher le bouton 🔊.
+        startBeaconEmission();
+        startBeaconDetection();
 
         channel = supabaseClient.channel(`room-${roomCode}`, {
             config: {
@@ -2041,7 +2047,7 @@
                 sameRoomBtn.className = 'tile-sameroom-btn';
                 sameRoomBtn.type = 'button';
                 sameRoomBtn.innerText = '🔊';
-                sameRoomBtn.title = "Cette personne est avec toi dans la même pièce (coupe le son dans les 2 sens, évite le larsen)";
+                sameRoomBtn.title = "Détection auto : le son se coupera tout seul si vous êtes dans la même pièce (tape pour forcer)";
                 sameRoomBtn.onclick = (e) => { e.stopPropagation(); toggleSameRoomPeer(id); };
                 tile.appendChild(sameRoomBtn);
             } else {
@@ -2201,13 +2207,19 @@
     // rejoué → recapté...) continue même volume au plus bas. En coupant complètement l'envoi
     // ET la réception avec cette personne précise (sans toucher aux joueurs vraiment à
     // distance), la boucle est cassée quel que soit le volume du téléphone.
+    //
+    // Cette coupure est maintenant déclenchée AUTOMATIQUEMENT par la détection ultrasons
+    // ci-dessous (aucune action requise). Le bouton 🔊 sur la vignette reste disponible en
+    // secours (appareil trop ancien, micro/HP qui ne captent pas bien les ultrasons, etc.) :
+    // un appui manuel prend la main sur la détection auto pendant quelques secondes.
     let sameRoomPeers = new Set();
+    const manualSameRoomOverrideUntil = {}; // peerId -> timestamp ms : ignorer l'auto jusque là
 
-    function toggleSameRoomPeer(id) {
-        if (sameRoomPeers.has(id)) sameRoomPeers.delete(id);
-        else sameRoomPeers.add(id);
+    function setSameRoomPeer(id, shouldMute) {
+        if (sameRoomPeers.has(id) === shouldMute) return; // déjà dans le bon état
 
-        const isMuted = sameRoomPeers.has(id);
+        if (shouldMute) sameRoomPeers.add(id); else sameRoomPeers.delete(id);
+        const isMuted = shouldMute;
 
         // Réception : on arrête de jouer son audio chez nous
         const tile = document.getElementById(`tile-${id}`);
@@ -2219,8 +2231,8 @@
                 btn.classList.toggle('muted', isMuted);
                 btn.innerText = isMuted ? '🔇' : '🔊';
                 btn.title = isMuted
-                    ? 'Son coupé dans les 2 sens (même pièce) — retape pour réactiver'
-                    : 'Cette personne est avec toi dans la même pièce (coupe le son dans les 2 sens, évite le larsen)';
+                    ? 'Son coupé automatiquement (même pièce détectée) — retape pour forcer la réactivation'
+                    : 'Détection auto : le son se coupera tout seul si vous êtes dans la même pièce (tape pour forcer)';
             }
         }
 
@@ -2230,6 +2242,136 @@
         if (audioSender && audioSender.track) {
             audioSender.track.enabled = !isMuted && micOn;
         }
+    }
+
+    // Appui manuel sur le bouton 🔊 d'une vignette : force l'état inverse et empêche la
+    // détection auto de le recorriger pendant un moment (ex: on veut réentendre quelqu'un
+    // qu'on sait "même pièce" pour une blague, sans que ça remute aussitôt).
+    function toggleSameRoomPeer(id) {
+        manualSameRoomOverrideUntil[id] = Date.now() + 15000;
+        setSameRoomPeer(id, !sameRoomPeers.has(id));
+    }
+
+    // --- DÉTECTION AUTOMATIQUE "MÊME PIÈCE" PAR ULTRASONS ---
+    // Chaque appareil émet en continu, via son haut-parleur, une tonalité inaudible (~19 kHz)
+    // qui lui est propre. Si le micro d'un autre joueur capte cette tonalité à une intensité
+    // suffisante, c'est que les deux téléphones sont physiquement proches (même pièce) : on
+    // déclenche alors automatiquement la coupure bidirectionnelle ci-dessus, sans que personne
+    // n'ait à toucher un bouton. La fréquence de chacun est calculée à partir de son ID de
+    // session : pas besoin de se la communiquer, les deux côtés la calculent pareil.
+    const BEACON_MIN_FREQ = 18500;   // Hz — au-delà de ce que la plupart des adultes entendent
+    const BEACON_FREQ_STEP = 45;     // Hz — écart entre deux joueurs pour éviter les confusions
+    const BEACON_SLOTS = 20;         // nb de fréquences possibles (18500 → 19400 Hz)
+    const BEACON_FFT_SIZE = 16384;   // résolution fine nécessaire pour distinguer les fréquences
+    const BEACON_DETECT_THRESHOLD_DB = -60; // seuil d'intensité au-delà duquel on considère "capté"
+    const BEACON_CONFIRM_TICKS = 3;  // ~1,5s de détection continue avant de couper (évite les faux positifs)
+    const BEACON_RELEASE_TICKS = 6;  // ~3s d'absence avant de réactiver (évite le flicker)
+    const BEACON_TICK_MS = 500;
+
+    function beaconFrequencyFor(peerId) {
+        let hash = 0;
+        for (let i = 0; i < peerId.length; i++) hash = (hash * 31 + peerId.charCodeAt(i)) >>> 0;
+        return BEACON_MIN_FREQ + (hash % BEACON_SLOTS) * BEACON_FREQ_STEP;
+    }
+
+    let beaconEmitCtx = null;
+    let beaconOscillator = null;
+
+    function startBeaconEmission() {
+        if (beaconEmitCtx) return;
+        try {
+            beaconEmitCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = beaconEmitCtx.createOscillator();
+            const gain = beaconEmitCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = beaconFrequencyFor(myId);
+            gain.gain.value = 0.05; // volume minimal : juste assez pour un micro à quelques mètres
+            osc.connect(gain);
+            gain.connect(beaconEmitCtx.destination);
+            osc.start();
+            beaconOscillator = osc;
+        } catch (err) {
+            // Pas grave : sur cet appareil la détection auto ne marchera pas dans ce sens,
+            // le bouton manuel reste utilisable pour couper le larsen.
+        }
+    }
+
+    function stopBeaconEmission() {
+        if (beaconOscillator) { try { beaconOscillator.stop(); } catch (err) {} beaconOscillator = null; }
+        if (beaconEmitCtx) { try { beaconEmitCtx.close(); } catch (err) {} beaconEmitCtx = null; }
+    }
+
+    let beaconAnalyser = null;
+    let beaconAnalyserCtx = null;
+    let beaconRawStream = null;
+    let beaconDetectInterval = null;
+    const beaconHitTicks = {};   // peerId -> nb de détections consécutives
+    const beaconMissTicks = {};  // peerId -> nb d'absences consécutives
+
+    async function startBeaconDetection() {
+        if (beaconAnalyser) return;
+        try {
+            // Flux micro dédié, SANS suppression de bruit/écho : ces traitements filtrent
+            // souvent les ultrasons, ce qui empêcherait de détecter les autres joueurs. Ce
+            // flux ne sert qu'à l'analyse, il n'est jamais envoyé aux autres joueurs.
+            beaconRawStream = await navigator.mediaDevices.getUserMedia({
+                audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+            });
+            beaconAnalyserCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const source = beaconAnalyserCtx.createMediaStreamSource(beaconRawStream);
+            beaconAnalyser = beaconAnalyserCtx.createAnalyser();
+            beaconAnalyser.fftSize = BEACON_FFT_SIZE;
+            beaconAnalyser.smoothingTimeConstant = 0.2;
+            source.connect(beaconAnalyser);
+
+            beaconDetectInterval = setInterval(runBeaconDetectionTick, BEACON_TICK_MS);
+        } catch (err) {
+            // Micro dédié indisponible (permission refusée, matériel...) : la détection auto
+            // ne fonctionnera pas, mais le bouton manuel "même pièce" reste là en secours.
+        }
+    }
+
+    function stopBeaconDetection() {
+        if (beaconDetectInterval) { clearInterval(beaconDetectInterval); beaconDetectInterval = null; }
+        if (beaconRawStream) { beaconRawStream.getTracks().forEach(t => t.stop()); beaconRawStream = null; }
+        if (beaconAnalyserCtx) { try { beaconAnalyserCtx.close(); } catch (err) {} beaconAnalyserCtx = null; }
+        beaconAnalyser = null;
+        Object.keys(beaconHitTicks).forEach(k => delete beaconHitTicks[k]);
+        Object.keys(beaconMissTicks).forEach(k => delete beaconMissTicks[k]);
+    }
+
+    function runBeaconDetectionTick() {
+        if (!beaconAnalyser) return;
+        const freqData = new Float32Array(beaconAnalyser.frequencyBinCount);
+        beaconAnalyser.getFloatFrequencyData(freqData);
+        const binWidth = beaconAnalyserCtx.sampleRate / beaconAnalyser.fftSize;
+
+        Object.keys(peerConnections).forEach(peerId => {
+            // Un appui manuel récent sur le bouton de ce joueur garde la main temporairement.
+            if (Date.now() < (manualSameRoomOverrideUntil[peerId] || 0)) return;
+
+            const freq = beaconFrequencyFor(peerId);
+            const centerBin = Math.round(freq / binWidth);
+            let maxDb = -Infinity;
+            for (let b = centerBin - 2; b <= centerBin + 2; b++) {
+                if (freqData[b] !== undefined) maxDb = Math.max(maxDb, freqData[b]);
+            }
+            const detected = maxDb > BEACON_DETECT_THRESHOLD_DB;
+
+            if (detected) {
+                beaconHitTicks[peerId] = (beaconHitTicks[peerId] || 0) + 1;
+                beaconMissTicks[peerId] = 0;
+                if (beaconHitTicks[peerId] >= BEACON_CONFIRM_TICKS) {
+                    setSameRoomPeer(peerId, true);
+                }
+            } else {
+                beaconMissTicks[peerId] = (beaconMissTicks[peerId] || 0) + 1;
+                beaconHitTicks[peerId] = 0;
+                if (beaconMissTicks[peerId] >= BEACON_RELEASE_TICKS) {
+                    setSameRoomPeer(peerId, false);
+                }
+            }
+        });
     }
 
     // --- QUITTER LE SALON ---
@@ -2252,6 +2394,9 @@
             localStream = null;
         }
 
+        stopBeaconEmission();
+        stopBeaconDetection();
+
         resetGameState();
         document.getElementById('video-grid').innerHTML = '';
         document.getElementById('spotlight-area').innerHTML = '';
@@ -2261,6 +2406,7 @@
         micOn = true;
         camOn = true;
         sameRoomPeers.clear();
+        Object.keys(manualSameRoomOverrideUntil).forEach(k => delete manualSameRoomOverrideUntil[k]);
         showScreen('entry-screen');
         backToEntryChoice();
         setStatus('create-status', '', null);
