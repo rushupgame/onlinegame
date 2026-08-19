@@ -252,22 +252,45 @@
         cursor: pointer;
     }
 
+    /* Code couleur distinct par action pour repérer chaque bouton en un coup d'œil :
+       partager = neutre/informatif, recommencer = attention (relance tout), quitter = danger. */
+    .action-btn-share {
+        background: rgba(59,130,246,0.15);
+        border: 1px solid #3b82f6;
+        color: #93c5fd;
+    }
+
+    .action-btn-restart {
+        background: rgba(245,158,11,0.15);
+        border: 1px solid var(--warning);
+        color: var(--warning);
+    }
+
+    .action-btn-leave {
+        background: rgba(255,71,87,0.15);
+        border: 1px solid var(--primary);
+        color: var(--primary-hover);
+    }
+
     /* Toujours UNE seule ligne de petites webcams, quel que soit le nombre de participants ou
        la taille de l'écran : plutôt que de wrapper sur plusieurs lignes (grid auto-fit), on
-       reste en flex sans retour à la ligne et on laisse défiler horizontalement au besoin. */
+       reste en flex sans retour à la ligne et on laisse défiler horizontalement au besoin.
+       "safe center" : centrée quand tout tient à l'écran, mais repasse en alignement de
+       départ (sans rien couper) dès qu'il faut scroller pour voir tout le monde. */
     #video-grid {
         display: flex;
         flex-wrap: nowrap;
+        justify-content: safe center;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
         scrollbar-width: thin;
-        gap: 12px;
+        gap: 10px;
         width: 100%;
         transition: all 0.2s ease;
     }
 
     #video-grid .video-tile {
-        flex: 0 0 160px;
+        flex: 0 0 110px;
     }
 
     .video-tile {
@@ -1113,7 +1136,7 @@
        (mot à deviner, boutons, scores) prend toute la largeur restante à droite — plus besoin
        de scroller pour voir les deux à la fois. */
     @media (min-width: 900px) {
-        #room-screen { max-width: 1400px; }
+        #room-screen { max-width: none; width: 100%; }
 
         .room-main {
             display: flex;
@@ -1136,7 +1159,7 @@
         }
 
         #video-grid .video-tile {
-            flex-basis: 140px;
+            flex-basis: 110px;
         }
 
         /* Config de partie (côté hôte) répartie en 3 blocs horizontaux sur PC pour tout voir
@@ -1199,9 +1222,9 @@
 <div id="room-screen" class="screen">
     <div class="room-header" id="room-header">
         <div class="room-code-badge"><span class="room-code-label">Code de session</span> <span id="room-code-display">—</span></div>
-        <button class="leave-btn" id="share-code-btn" onclick="shareRoomCode()" title="Partager le code">📤 Partager</button>
-        <button class="leave-btn" id="host-new-theme-btn" onclick="confirmRestartToConfig()" style="display:none;">🔁 Recommencer une nouvelle partie</button>
-        <button class="leave-btn" onclick="leaveRoom()">🚪 Quitter le salon</button>
+        <button class="leave-btn action-btn-share" id="share-code-btn" onclick="shareRoomCode()" title="Partager le code">📤 Partager</button>
+        <button class="leave-btn action-btn-restart" id="host-new-theme-btn" onclick="confirmRestartToConfig()" style="display:none;">🔁 Recommencer une nouvelle partie</button>
+        <button class="leave-btn action-btn-leave" onclick="leaveRoom()">🚪 Quitter le salon</button>
     </div>
 
     <div id="connection-banner" class="connection-banner" style="display:none;">
@@ -2108,9 +2131,15 @@
     // Affiche "Nom · Éq.X" sur chaque vignette dès que les équipes sont connues (une fois la
     // partie lancée) ; avant ça, seul le nom est affiché. Appelée à chaque état de jeu reçu.
     function getPlayerTeamNumber(id) {
-        if (!gameState || !gameState.teamRosters) return null;
-        const found = Object.keys(gameState.teamRosters).find(t => gameState.teamRosters[t].includes(id));
-        return found || null;
+        if (gameState && gameState.teamRosters) {
+            const found = Object.keys(gameState.teamRosters).find(t => gameState.teamRosters[t].includes(id));
+            if (found) return found;
+        }
+        // Avant le lancement de la partie (écran de configuration des équipes côté hôte) :
+        // on colore quand même les vignettes selon l'assignation en cours, pour repérer ses
+        // coéquipiers d'un coup d'œil pendant qu'on compose les équipes.
+        if (configTeamAssignments && configTeamAssignments[id]) return String(configTeamAssignments[id]);
+        return null;
     }
 
     function updateVideoTileLabels() {
@@ -2654,6 +2683,7 @@ gen_easy: ["Bouteille", "Soleil", "Voiture", "Maison", "Fleur", "Chien", "Chat",
             preview.innerHTML = '';
             startBtn.disabled = true;
             status.innerText = `Il faut au moins 4 joueurs connectés pour jouer (actuellement ${ids.length}). Chaque joueur doit faire deviner à un coéquipier.`;
+            updateVideoTileLabels();
             return;
         }
 
@@ -2682,6 +2712,8 @@ gen_easy: ["Bouteille", "Soleil", "Voiture", "Maison", "Fleur", "Chien", "Chat",
             startBtn.disabled = false;
             status.innerText = '';
         }
+
+        updateVideoTileLabels();
     }
 
     function shuffleGame(arr) {
