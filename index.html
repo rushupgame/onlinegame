@@ -252,12 +252,22 @@
         cursor: pointer;
     }
 
+    /* Toujours UNE seule ligne de petites webcams, quel que soit le nombre de participants ou
+       la taille de l'écran : plutôt que de wrapper sur plusieurs lignes (grid auto-fit), on
+       reste en flex sans retour à la ligne et on laisse défiler horizontalement au besoin. */
     #video-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
         gap: 12px;
         width: 100%;
         transition: all 0.2s ease;
+    }
+
+    #video-grid .video-tile {
+        flex: 0 0 160px;
     }
 
     .video-tile {
@@ -416,30 +426,34 @@
         margin-top: 16px;
     }
 
-    /* Réactions flottantes : visibles par tout le monde, envoyées via un petit bouton fixe
-       en bas de l'écran pour rester accessible en permanence, y compris en pleine partie. */
+    /* Réactions : épinglées en haut à droite de la grosse webcam (spotlight), en plus petit
+       qu'avant — #video-zone sert d'ancrage positionné pour ça. */
+    #video-zone {
+        position: relative;
+        width: 100%;
+    }
+
     .reactions-bar {
-        position: fixed;
-        left: 50%;
-        bottom: max(14px, env(safe-area-inset-bottom));
-        transform: translateX(-50%);
-        z-index: 40;
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        z-index: 20;
         display: flex;
-        gap: 8px;
-        background: rgba(15,23,42,0.85);
+        gap: 5px;
+        background: rgba(15,23,42,0.75);
         border: 1px solid var(--card-border);
-        border-radius: 30px;
-        padding: 6px;
+        border-radius: 24px;
+        padding: 4px;
         backdrop-filter: blur(4px);
     }
 
     .reactions-bar button {
-        width: 40px;
-        height: 40px;
+        width: 30px;
+        height: 30px;
         border-radius: 50%;
         border: none;
-        background: rgba(255,255,255,0.06);
-        font-size: 1.2rem;
+        background: rgba(255,255,255,0.08);
+        font-size: 0.95rem;
         cursor: pointer;
         display: flex;
         align-items: center;
@@ -812,14 +826,22 @@
         font-size: 0.95rem;
     }
 
+    /* Les options des <select> (liste déroulée) ne sont pas soumises au style visuel classique
+       du reste de la page : on force explicitement un fond de la couleur du thème par défaut
+       avec une écriture blanche pour rester lisible sur tous les navigateurs. */
+    .theme-select option {
+        background: var(--bg);
+        color: var(--text-main);
+    }
+
     .select-blue,
     .select-blue option {
-        background: #1d4ed8;
-        color: #ffffff;
+        background: var(--bg);
+        color: var(--text-main);
     }
 
     .select-blue {
-        border-color: #1d4ed8;
+        border-color: var(--card-border);
     }
 
     .checkbox-row {
@@ -998,13 +1020,55 @@
     }
 
     #video-grid.has-spotlight {
-        grid-template-columns: repeat(auto-fit, minmax(var(--tile-min, 90px), 1fr));
+        flex-wrap: nowrap;
     }
 
     #video-grid.has-spotlight .video-tile {
+        flex: 0 0 var(--tile-min, 90px);
         aspect-ratio: 1 / 1;
         max-height: 110px;
     }
+
+    /* Encart de confirmation avec fond flouté (remplace le confirm() natif du navigateur) */
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15,23,42,0.55);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+        padding: 20px;
+    }
+
+    .modal-overlay.active { display: flex; }
+
+    .modal-card {
+        background: var(--bg-alt);
+        border: 1px solid var(--card-border);
+        border-radius: var(--radius);
+        padding: 24px;
+        max-width: 380px;
+        width: 100%;
+        text-align: center;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+    }
+
+    .modal-card p {
+        color: var(--text-main);
+        font-size: 0.95rem;
+        line-height: 1.45;
+        margin: 0 0 20px;
+    }
+
+    .modal-btn-row {
+        display: flex;
+        gap: 10px;
+    }
+
+    .modal-btn-row .btn { margin-top: 0; }
 
     .game-toast {
         position: fixed;
@@ -1071,8 +1135,17 @@
             min-width: 0;
         }
 
-        #video-grid {
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        #video-grid .video-tile {
+            flex-basis: 140px;
+        }
+
+        /* Config de partie (côté hôte) répartie en 3 blocs horizontaux sur PC pour tout voir
+           sans avoir à scroller. */
+        .config-columns {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            align-items: start;
         }
     }
 </style>
@@ -1127,7 +1200,7 @@
     <div class="room-header" id="room-header">
         <div class="room-code-badge"><span class="room-code-label">Code de session</span> <span id="room-code-display">—</span></div>
         <button class="leave-btn" id="share-code-btn" onclick="shareRoomCode()" title="Partager le code">📤 Partager</button>
-        <button class="leave-btn" id="host-new-theme-btn" onclick="confirmRestartToConfig()" style="display:none;">🔁 Nouveau thème</button>
+        <button class="leave-btn" id="host-new-theme-btn" onclick="confirmRestartToConfig()" style="display:none;">🔁 Recommencer une nouvelle partie</button>
         <button class="leave-btn" onclick="leaveRoom()">🚪 Quitter le salon</button>
     </div>
 
@@ -1144,6 +1217,14 @@
     <div id="video-zone">
         <div id="spotlight-area"></div>
         <div id="video-grid"></div>
+        <!-- Réactions : visibles par tous, envoyées à tout moment pendant la partie. Positionnées
+             en haut à droite de la webcam principale plutôt qu'en barre flottante plein écran. -->
+        <div class="reactions-bar">
+            <button type="button" onclick="sendReaction('❤️')">❤️</button>
+            <button type="button" onclick="sendReaction('🔥')">🔥</button>
+            <button type="button" onclick="sendReaction('😂')">😂</button>
+            <button type="button" onclick="sendReaction('💩')">💩</button>
+        </div>
     </div>
 
     <div class="participant-count" id="participant-count">1 participant</div>
@@ -1158,6 +1239,8 @@
                 En attente que l'hôte configure et lance la partie...
             </div>
             <div id="host-config-view" style="display:none;">
+                <div class="config-columns">
+                <div class="config-col">
                 <div class="config-group">
                     <label>Thème</label>
                     <select id="theme-select" class="theme-select"></select>
@@ -1179,7 +1262,9 @@
                         <div class="timer-option" data-val="90" onclick="selectTimer(90)">90s</div>
                     </div>
                 </div>
+                </div>
 
+                <div class="config-col">
                 <div class="team-count-stepper">
                     <button type="button" class="stepper-btn" onclick="adjustTeamCount(-1)">−</button>
                     <span class="stepper-value" id="team-count-value">2</span>
@@ -1189,9 +1274,12 @@
 
                 <div class="config-group">
                     <label>Répartition des joueurs (touche un nom pour changer son équipe)</label>
+                    <button type="button" class="btn btn-secondary" style="margin-bottom:10px;" onclick="randomizeTeams()">🎲 Répartition aléatoire</button>
                     <div class="team-preview" id="team-preview"></div>
                 </div>
+                </div>
 
+                <div class="config-col">
                 <div class="config-group">
                     <label>Passer les cartes</label>
                     <select id="passrule-select" class="theme-select select-blue">
@@ -1219,6 +1307,8 @@
                     <label for="joker-toggle">Mot joker</label>
                 </div>
                 <div class="checkbox-hint">Un mot du paquet est tiré au sort en secret et rapporte le double de points s'il est trouvé. Personne ne sait lequel avant qu'il soit deviné !</div>
+                </div>
+                </div>
 
                 <button class="btn btn-primary" id="start-game-btn" onclick="hostStartGame()" disabled>🚀 Démarrer la partie</button>
                 <div class="status-line" id="host-config-status">Il faut au moins 2 joueurs connectés.</div>
@@ -1306,13 +1396,17 @@
         <div class="sameroom-hint-text">💡 Tape le 🔊 sur la webcam d'un joueur avec qui tu es dans la même pièce : ça coupe le son dans les 2 sens avec lui (fini le larsen, même si le volume Android ne descend pas assez bas).</div>
     </footer>
 
-    <!-- Réactions : visibles par tous, envoyées à tout moment pendant la partie -->
     <div id="reactions-fly-layer"></div>
-    <div class="reactions-bar">
-        <button type="button" onclick="sendReaction('❤️')">❤️</button>
-        <button type="button" onclick="sendReaction('🔥')">🔥</button>
-        <button type="button" onclick="sendReaction('😂')">😂</button>
-        <button type="button" onclick="sendReaction('💩')">💩</button>
+</div>
+
+<!-- Confirmation (fond flouté) avant de recommencer une nouvelle partie sur un autre thème -->
+<div id="restart-confirm-modal" class="modal-overlay">
+    <div class="modal-card">
+        <p>Relancer une nouvelle partie sur un autre thème ? La partie en cours sera arrêtée pour tout le monde.</p>
+        <div class="modal-btn-row">
+            <button type="button" class="btn btn-secondary" onclick="closeRestartConfirmModal()">Annuler</button>
+            <button type="button" class="btn btn-primary" onclick="doRestartToConfig()">Relancer</button>
+        </div>
     </div>
 </div>
 
@@ -1543,6 +1637,10 @@
             header.style.display = 'flex';
             footerControls.classList.remove('active');
         }
+
+        // "X participants" masqué pendant la partie pour laisser plus de place au jeu.
+        const participantCount = document.getElementById('participant-count');
+        if (participantCount) participantCount.style.display = gameStarted ? 'none' : 'block';
     }
 
     // Confirmation avant de fermer/recharger l'onglet par erreur (swipe, geste accidentel...) :
@@ -1973,6 +2071,14 @@
                 ? document.getElementById('spotlight-area')
                 : document.getElementById('video-grid');
             targetContainer.appendChild(tile);
+            // Si cette tuile est déjà désignée comme spotlight (ex : on vient de rejoindre le
+            // salon et l'hôte a été choisi comme spotlight avant même que sa vidéo n'arrive),
+            // il faut activer les classes d'affichage maintenant — sinon la zone spotlight reste
+            // masquée (display:none) alors que la tuile de l'hôte y a bien été insérée.
+            if (id === currentSpotlightId) {
+                document.getElementById('spotlight-area').classList.add('active');
+                document.getElementById('video-grid').classList.add('has-spotlight');
+            }
         } else {
             tile.dataset.playerName = name;
         }
@@ -2356,6 +2462,23 @@ gen_easy: ["Bouteille", "Soleil", "Voiture", "Maison", "Fleur", "Chien", "Chat",
         renderTeamAssignmentUI();
     }
 
+    // Bouton "🎲 Répartition aléatoire" de l'hôte : propose un tirage au sort des équipes.
+    // Le résultat s'affiche directement dans le team-preview (modifiable joueur par joueur si
+    // besoin) ; l'hôte peut retaper le bouton pour retirer au sort, ou valider en démarrant
+    // la partie normalement.
+    function randomizeTeams() {
+        const ids = Object.keys(presentPlayers);
+        const shuffled = [...ids];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        shuffled.forEach((id, i) => {
+            configTeamAssignments[id] = (i % isConfigTeamCount) + 1;
+        });
+        renderTeamAssignmentUI();
+    }
+
     function renderTeamAssignmentUI() {
         const ids = Object.keys(presentPlayers);
         const preview = document.getElementById('team-preview');
@@ -2553,10 +2676,19 @@ gen_easy: ["Bouteille", "Soleil", "Voiture", "Maison", "Fleur", "Chien", "Chat",
     }
 
     // Permet à l'hôte de relancer une partie sur un autre thème à tout moment (pas seulement
-    // en fin de partie) : ça interrompt la partie en cours pour tout le monde, d'où la confirmation.
+    // en fin de partie) : ça interrompt la partie en cours pour tout le monde, d'où la confirmation
+    // via un encart à fond flouté plutôt que le confirm() natif du navigateur.
     function confirmRestartToConfig() {
         if (!isHost()) return;
-        if (!confirm("Relancer une nouvelle partie sur un autre thème ? La partie en cours sera arrêtée pour tout le monde.")) return;
+        document.getElementById('restart-confirm-modal').classList.add('active');
+    }
+
+    function closeRestartConfirmModal() {
+        document.getElementById('restart-confirm-modal').classList.remove('active');
+    }
+
+    function doRestartToConfig() {
+        closeRestartConfirmModal();
         hostRestartToConfig();
     }
 
