@@ -260,39 +260,6 @@
         transition: all 0.2s ease;
     }
 
-    /* Mode compact : activé automatiquement pendant un tour actif pour que le mot à deviner
-       et les boutons Trouvé/Passer restent visibles sans scroll sur un petit écran de téléphone.
-       Les webcams des autres joueurs restent toutes visibles, mais en bandeau défilant réduit. */
-    body.video-compact #spotlight-area {
-        max-height: 18vh;
-        margin-bottom: 6px;
-    }
-
-    body.video-compact #spotlight-area .video-tile {
-        max-height: 18vh;
-    }
-
-    body.video-compact #video-grid {
-        display: flex;
-        overflow-x: auto;
-        overflow-y: hidden;
-        -webkit-overflow-scrolling: touch;
-        gap: 8px;
-        padding-bottom: 4px;
-        margin-bottom: 10px;
-    }
-
-    body.video-compact #video-grid .video-tile {
-        flex: 0 0 auto;
-        width: 72px;
-        aspect-ratio: 1 / 1;
-    }
-
-    body.video-compact #video-grid .name-tag {
-        font-size: 0.6rem;
-        padding: 2px 4px;
-    }
-
     .video-tile {
         position: relative;
         background: #000;
@@ -306,10 +273,10 @@
     .video-tile.speaking { border-color: var(--warning); }
 
     /* Liseré coloré par équipe une fois la partie lancée, pour identifier ses coéquipiers
-       d'un coup d'œil parmi toutes les webcams. */
-    .video-tile.team-1:not(.self) { border-color: #f43f5e; }
-    .video-tile.team-2:not(.self) { border-color: #3b82f6; }
-    .video-tile.team-3:not(.self) { border-color: #eab308; }
+       d'un coup d'œil parmi toutes les webcams — y compris la sienne. */
+    .video-tile.team-1 { border-color: #f43f5e; }
+    .video-tile.team-2 { border-color: #3b82f6; }
+    .video-tile.team-3 { border-color: #eab308; }
 
     .tile-sameroom-btn {
         position: absolute;
@@ -335,12 +302,36 @@
         color: #0f172a;
     }
 
-    body.video-compact .tile-sameroom-btn {
-        width: 20px;
-        height: 20px;
-        font-size: 0.65rem;
-        top: 3px;
-        right: 3px;
+    /* Icônes micro/caméra directement sur sa propre vignette (au lieu d'une barre de contrôle
+       séparée qui prenait de la place) : plus rapide à taper, et ça libère de l'espace vertical
+       pour le jeu sur mobile. */
+    .tile-self-controls {
+        position: absolute;
+        bottom: 6px;
+        right: 6px;
+        display: flex;
+        gap: 6px;
+    }
+
+    .tile-self-controls button {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(15,23,42,0.75);
+        color: var(--text-main);
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .tile-self-controls button.off {
+        background: var(--danger, #ef4444);
+        color: #fff;
     }
 
     .video-tile.reconnecting { border-color: var(--warning); animation: pulse-reconnect 1.2s infinite; }
@@ -425,6 +416,61 @@
         margin-top: 16px;
     }
 
+    /* Réactions flottantes : visibles par tout le monde, envoyées via un petit bouton fixe
+       en bas de l'écran pour rester accessible en permanence, y compris en pleine partie. */
+    .reactions-bar {
+        position: fixed;
+        left: 50%;
+        bottom: max(14px, env(safe-area-inset-bottom));
+        transform: translateX(-50%);
+        z-index: 40;
+        display: flex;
+        gap: 8px;
+        background: rgba(15,23,42,0.85);
+        border: 1px solid var(--card-border);
+        border-radius: 30px;
+        padding: 6px;
+        backdrop-filter: blur(4px);
+    }
+
+    .reactions-bar button {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(255,255,255,0.06);
+        font-size: 1.2rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .reactions-bar button:active { transform: scale(0.9); }
+
+    #reactions-fly-layer {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 39;
+        overflow: hidden;
+    }
+
+    .reaction-particle {
+        position: absolute;
+        bottom: 70px;
+        font-size: 2rem;
+        animation: reaction-float 2.2s ease-out forwards;
+    }
+
+    @keyframes reaction-float {
+        0% { transform: translateY(0) scale(0.6); opacity: 0; }
+        15% { transform: translateY(-30px) scale(1.1); opacity: 1; }
+        100% { transform: translateY(-70vh) scale(1); opacity: 0; }
+    }
+
     .room-footer {
         width: 100%;
         font-size: 0.7rem;
@@ -432,6 +478,7 @@
         text-align: center;
         margin-top: 24px;
         padding-top: 14px;
+        padding-bottom: 56px; /* évite que la barre de réactions fixe ne recouvre ce texte */
         border-top: 1px solid var(--card-border);
     }
 
@@ -550,6 +597,23 @@
         background: var(--primary);
         border-color: var(--primary);
         color: white;
+    }
+
+    .range-slider {
+        width: 100%;
+        accent-color: var(--primary);
+        height: 32px;
+        cursor: pointer;
+        touch-action: manipulation;
+    }
+
+    .range-minmax {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        margin-top: -6px;
+        margin-bottom: 14px;
     }
 
     .team-preview {
@@ -977,6 +1041,40 @@
         color: var(--primary-hover);
         box-shadow: 0 0 20px rgba(255, 71, 87, 0.5);
     }
+
+    /* --- MISE EN PAGE DESKTOP --- */
+    /* Sur mobile, tout reste empilé en une colonne (comportement par défaut ci-dessus).
+       À partir d'un écran assez large, on exploite tout l'espace disponible : les webcams
+       restent visibles en permanence dans une colonne fixe à gauche pendant que la partie
+       (mot à deviner, boutons, scores) prend toute la largeur restante à droite — plus besoin
+       de scroller pour voir les deux à la fois. */
+    @media (min-width: 900px) {
+        #room-screen { max-width: 1400px; }
+
+        .room-main {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            gap: 28px;
+            width: 100%;
+        }
+
+        .room-main-video-col {
+            flex: 0 0 380px;
+            max-width: 380px;
+            position: sticky;
+            top: 20px;
+        }
+
+        #game-section {
+            flex: 1;
+            min-width: 0;
+        }
+
+        #video-grid {
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        }
+    }
 </style>
 </head>
 <body>
@@ -1028,6 +1126,8 @@
 <div id="room-screen" class="screen">
     <div class="room-header" id="room-header">
         <div class="room-code-badge"><span class="room-code-label">Code de session</span> <span id="room-code-display">—</span></div>
+        <button class="leave-btn" id="share-code-btn" onclick="shareRoomCode()" title="Partager le code">📤 Partager</button>
+        <button class="leave-btn" id="host-new-theme-btn" onclick="confirmRestartToConfig()" style="display:none;">🔁 Nouveau thème</button>
         <button class="leave-btn" onclick="leaveRoom()">🚪 Quitter le salon</button>
     </div>
 
@@ -1039,17 +1139,15 @@
         📶 Connexion lente détectée — coupe ta caméra (📹) pour fluidifier la partie
     </div>
 
+    <div class="room-main" id="room-main">
+    <div class="room-main-video-col">
     <div id="video-zone">
         <div id="spotlight-area"></div>
         <div id="video-grid"></div>
     </div>
 
-    <div class="controls-bar">
-        <button class="control-btn" id="toggle-mic-btn" onclick="toggleMic()" aria-label="Micro">🎤</button>
-        <button class="control-btn" id="toggle-cam-btn" onclick="toggleCam()" aria-label="Caméra">📹</button>
-    </div>
-
     <div class="participant-count" id="participant-count">1 participant</div>
+    </div>
 
     <!-- ZONE DE JEU -->
     <div id="game-section">
@@ -1066,13 +1164,10 @@
                 </div>
 
                 <div class="config-group">
-                    <label>Nombre de mots</label>
-                    <div class="timer-select" id="wordcount-select">
-                        <div class="timer-option" data-val="30" onclick="selectWordCount(30)">30</div>
-                        <div class="timer-option active" data-val="40" onclick="selectWordCount(40)">40</div>
-                        <div class="timer-option" data-val="60" onclick="selectWordCount(60)">60</div>
-                        <div class="timer-option" data-val="80" onclick="selectWordCount(80)">80</div>
-                    </div>
+                    <label>Nombre de mots : <span id="wordcount-value">30</span></label>
+                    <input type="range" id="wordcount-range" min="10" max="100" step="5" value="30"
+                           class="range-slider" oninput="selectWordCount(parseInt(this.value))">
+                    <div class="range-minmax"><span>10</span><span>100</span></div>
                 </div>
 
                 <div class="config-group">
@@ -1204,11 +1299,21 @@
             <div id="final-wait-text" class="waiting-text" style="display:none;">En attente de l'hôte...</div>
         </div>
     </div>
+    </div>
 
     <footer class="room-footer">
         <div class="room-footer-controls" id="room-footer-controls"></div>
-        <div class="sameroom-hint-text">💡 Tape le 🔊 sur la webcam d'un joueur avec qui tu es dans la même pièce pour couper son son et éviter le larsen.</div>
+        <div class="sameroom-hint-text">💡 Tape le 🔊 sur la webcam d'un joueur avec qui tu es dans la même pièce : ça coupe le son dans les 2 sens avec lui (fini le larsen, même si le volume Android ne descend pas assez bas).</div>
     </footer>
+
+    <!-- Réactions : visibles par tous, envoyées à tout moment pendant la partie -->
+    <div id="reactions-fly-layer"></div>
+    <div class="reactions-bar">
+        <button type="button" onclick="sendReaction('❤️')">❤️</button>
+        <button type="button" onclick="sendReaction('🔥')">🔥</button>
+        <button type="button" onclick="sendReaction('😂')">😂</button>
+        <button type="button" onclick="sendReaction('💩')">💩</button>
+    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -1618,8 +1723,19 @@
 
         if (localStream) {
             localStream.getTracks().forEach(track => {
-                const sender = pc.addTrack(track, localStream);
-                if (track.kind === 'video') videoSenders[peerId] = sender;
+                if (track.kind === 'audio') {
+                    // On clone la piste audio pour CHAQUE pair : ça permet de couper l'envoi de
+                    // son micro vers une seule personne précise (ex: un joueur "même pièce")
+                    // sans couper le micro pour tout le monde. Un clone garde le même son mais
+                    // a son propre "enabled" indépendant.
+                    const audioClone = track.clone();
+                    audioClone.enabled = micOn && !sameRoomPeers.has(peerId);
+                    const sender = pc.addTrack(audioClone, localStream);
+                    audioSenders[peerId] = sender;
+                } else {
+                    const sender = pc.addTrack(track, localStream);
+                    if (track.kind === 'video') videoSenders[peerId] = sender;
+                }
             });
         }
         adjustVideoBitrates();
@@ -1709,6 +1825,26 @@
         });
     }
 
+    // File d'attente des candidats ICE reçus AVANT que setRemoteDescription n'ait été appelé
+    // pour ce pair. Avec 3-4 joueurs qui se connectent en même temps, les messages de
+    // signalisation peuvent arriver dans le désordre (le candidat ICE d'un pair peut arriver
+    // avant son offre/réponse) : sans file d'attente, ces candidats étaient perdus pour de bon,
+    // ce qui empêchait certaines connexions vidéo de s'établir complètement (webcams manquantes).
+    const pendingIceCandidates = {}; // peerId -> candidats en attente
+
+    async function flushPendingIceCandidates(peerId, pc) {
+        const queued = pendingIceCandidates[peerId];
+        if (!queued || queued.length === 0) return;
+        delete pendingIceCandidates[peerId];
+        for (const candidateData of queued) {
+            try {
+                await pc.addIceCandidate(new RTCIceCandidate(candidateData));
+            } catch (err) {
+                // Candidat devenu obsolète entretemps : sans conséquence
+            }
+        }
+    }
+
     async function handleSignal(payload) {
         if (payload.to !== myId) return;
         const peerId = payload.from;
@@ -1716,16 +1852,25 @@
 
         if (payload.type === 'offer') {
             await pc.setRemoteDescription(new RTCSessionDescription(payload.data));
+            await flushPendingIceCandidates(peerId, pc);
             const answer = await pc.createAnswer();
             await pc.setLocalDescription(answer);
             sendSignal(peerId, 'answer', answer);
         } else if (payload.type === 'answer') {
             await pc.setRemoteDescription(new RTCSessionDescription(payload.data));
+            await flushPendingIceCandidates(peerId, pc);
         } else if (payload.type === 'ice') {
-            try {
-                await pc.addIceCandidate(new RTCIceCandidate(payload.data));
-            } catch (err) {
-                // Candidat ICE arrivé trop tôt/tard : sans conséquence en général
+            if (pc.remoteDescription && pc.remoteDescription.type) {
+                try {
+                    await pc.addIceCandidate(new RTCIceCandidate(payload.data));
+                } catch (err) {
+                    // Candidat ICE arrivé trop tard/obsolète : sans conséquence en général
+                }
+            } else {
+                // La description distante n'est pas encore posée : on garde le candidat de
+                // côté au lieu de le perdre, il sera appliqué dès qu'elle sera prête.
+                if (!pendingIceCandidates[peerId]) pendingIceCandidates[peerId] = [];
+                pendingIceCandidates[peerId].push(payload.data);
             }
         }
     }
@@ -1735,8 +1880,13 @@
             peerConnections[peerId].close();
             delete peerConnections[peerId];
         }
+        if (audioSenders[peerId] && audioSenders[peerId].track) {
+            audioSenders[peerId].track.stop(); // libère proprement le clone audio de ce pair
+        }
+        delete audioSenders[peerId];
         delete videoSenders[peerId];
         delete remoteNames[peerId];
+        delete pendingIceCandidates[peerId];
         clearTimeout(reconnectTimers[peerId]);
         delete reconnectTimers[peerId];
         delete reconnectAttempts[peerId];
@@ -1748,6 +1898,7 @@
     // mesure que le groupe grandit — la qualité perd un peu, mais reste largement suffisante
     // pour des vignettes de quelques centimètres.
     const videoSenders = {}; // peerId -> RTCRtpSender (piste vidéo)
+    const audioSenders = {}; // peerId -> RTCRtpSender (piste audio clonée, indépendante par pair)
 
     function adjustVideoBitrates() {
         const peerCount = Object.keys(peerConnections).length;
@@ -1792,9 +1943,30 @@
                 sameRoomBtn.className = 'tile-sameroom-btn';
                 sameRoomBtn.type = 'button';
                 sameRoomBtn.innerText = '🔊';
-                sameRoomBtn.title = "Cette personne est avec toi dans la même pièce (coupe son son, évite le larsen)";
+                sameRoomBtn.title = "Cette personne est avec toi dans la même pièce (coupe le son dans les 2 sens, évite le larsen)";
                 sameRoomBtn.onclick = (e) => { e.stopPropagation(); toggleSameRoomPeer(id); };
                 tile.appendChild(sameRoomBtn);
+            } else {
+                const selfControls = document.createElement('div');
+                selfControls.className = 'tile-self-controls';
+
+                const micBtn = document.createElement('button');
+                micBtn.type = 'button';
+                micBtn.id = 'toggle-mic-btn';
+                micBtn.innerText = '🎤';
+                micBtn.setAttribute('aria-label', 'Micro');
+                micBtn.onclick = (e) => { e.stopPropagation(); toggleMic(); };
+
+                const camBtn = document.createElement('button');
+                camBtn.type = 'button';
+                camBtn.id = 'toggle-cam-btn';
+                camBtn.innerText = '📹';
+                camBtn.setAttribute('aria-label', 'Caméra');
+                camBtn.onclick = (e) => { e.stopPropagation(); toggleCam(); };
+
+                selfControls.appendChild(micBtn);
+                selfControls.appendChild(camBtn);
+                tile.appendChild(selfControls);
             }
 
             const targetContainer = (id === currentSpotlightId)
@@ -1895,6 +2067,13 @@
         if (!localStream) return;
         micOn = !micOn;
         localStream.getAudioTracks().forEach(t => t.enabled = micOn);
+        // Chaque pair a son propre clone de la piste audio (cf getOrCreatePeerConnection) :
+        // on les répercute tous, sauf ceux marqués "même pièce" qui doivent rester coupés
+        // même quand le micro général est réactivé.
+        Object.keys(audioSenders).forEach(peerId => {
+            const sender = audioSenders[peerId];
+            if (sender && sender.track) sender.track.enabled = micOn && !sameRoomPeers.has(peerId);
+        });
         const btn = document.getElementById('toggle-mic-btn');
         btn.classList.toggle('off', !micOn);
         btn.innerText = micOn ? '🎤' : '🔇';
@@ -1910,33 +2089,51 @@
     }
 
     // --- MODE "MÊME PIÈCE" (par joueur) ---
-    // Coupe la lecture audio d'un flux distant précis (pas son envoi, ni celui des autres) :
-    // utile quand seule une partie du groupe est physiquement ensemble — ex. 2 joueurs côte à
-    // côte et 2 joueurs à distance. On ne mute que les webcams des personnes déjà entendues en
-    // vrai, en gardant le son des joueurs distants qui, eux, en ont besoin.
+    // Coupe le son dans LES DEUX SENS avec une personne précise — pas juste le volume, la
+    // vraie cause du larsen : sur Android, le volume minimum reste souvent audible pour le
+    // micro, donc la boucle (haut-parleur d'un téléphone → micro de l'autre → renvoyé →
+    // rejoué → recapté...) continue même volume au plus bas. En coupant complètement l'envoi
+    // ET la réception avec cette personne précise (sans toucher aux joueurs vraiment à
+    // distance), la boucle est cassée quel que soit le volume du téléphone.
     let sameRoomPeers = new Set();
 
     function toggleSameRoomPeer(id) {
         if (sameRoomPeers.has(id)) sameRoomPeers.delete(id);
         else sameRoomPeers.add(id);
 
-        const tile = document.getElementById(`tile-${id}`);
-        if (!tile) return;
         const isMuted = sameRoomPeers.has(id);
-        const video = tile.querySelector('video');
-        if (video) video.muted = isMuted;
-        const btn = tile.querySelector('.tile-sameroom-btn');
-        if (btn) {
-            btn.classList.toggle('muted', isMuted);
-            btn.innerText = isMuted ? '🔇' : '🔊';
-            btn.title = isMuted
-                ? 'Son coupé (même pièce) — retape pour réactiver'
-                : 'Cette personne est avec toi dans la même pièce (coupe son son, évite le larsen)';
+
+        // Réception : on arrête de jouer son audio chez nous
+        const tile = document.getElementById(`tile-${id}`);
+        if (tile) {
+            const video = tile.querySelector('video');
+            if (video) video.muted = isMuted;
+            const btn = tile.querySelector('.tile-sameroom-btn');
+            if (btn) {
+                btn.classList.toggle('muted', isMuted);
+                btn.innerText = isMuted ? '🔇' : '🔊';
+                btn.title = isMuted
+                    ? 'Son coupé dans les 2 sens (même pièce) — retape pour réactiver'
+                    : 'Cette personne est avec toi dans la même pièce (coupe le son dans les 2 sens, évite le larsen)';
+            }
+        }
+
+        // Envoi : on arrête de lui transmettre notre micro (uniquement vers cette personne,
+        // les autres joueurs continuent de nous entendre normalement)
+        const audioSender = audioSenders[id];
+        if (audioSender && audioSender.track) {
+            audioSender.track.enabled = !isMuted && micOn;
         }
     }
 
     // --- QUITTER LE SALON ---
     function leaveRoom() {
+        const inGame = gameState && gameState.phase !== 'lobby';
+        const message = inGame
+            ? "Es-tu sûr de vouloir quitter le salon ? Tu vas perdre la partie en cours."
+            : "Es-tu sûr de vouloir quitter le salon ?";
+        if (!confirm(message)) return;
+
         if (channel) {
             channel.untrack();
             supabaseClient.removeChannel(channel);
@@ -1958,10 +2155,6 @@
         micOn = true;
         camOn = true;
         sameRoomPeers.clear();
-        document.getElementById('toggle-mic-btn').classList.remove('off');
-        document.getElementById('toggle-mic-btn').innerText = '🎤';
-        document.getElementById('toggle-cam-btn').classList.remove('off');
-        document.getElementById('toggle-cam-btn').innerText = '📹';
         showScreen('entry-screen');
         backToEntryChoice();
         setStatus('create-status', '', null);
@@ -2030,7 +2223,7 @@ gen_easy: ["Bouteille", "Soleil", "Voiture", "Maison", "Fleur", "Chien", "Chat",
     let isConfigTeamCount = 2;
     let isConfigTimer = 45;
     let isConfigTheme = 'gen_easy';
-    let isConfigWordCount = 40;
+    let isConfigWordCount = 30;
     let isConfigPassRule = 'byRound';
     let isConfigPenaltyActive = false;
     let isConfigPenaltySeconds = 5;
@@ -2147,9 +2340,10 @@ gen_easy: ["Bouteille", "Soleil", "Voiture", "Maison", "Fleur", "Chien", "Chat",
 
     function selectWordCount(val) {
         isConfigWordCount = val;
-        document.querySelectorAll('#wordcount-select .timer-option').forEach(el => {
-            el.classList.toggle('active', parseInt(el.dataset.val) === val);
-        });
+        const label = document.getElementById('wordcount-value');
+        if (label) label.innerText = val;
+        const range = document.getElementById('wordcount-range');
+        if (range && parseInt(range.value) !== val) range.value = val;
     }
 
     function togglePenaltyDropdown() {
@@ -2331,10 +2525,39 @@ gen_easy: ["Bouteille", "Soleil", "Voiture", "Maison", "Fleur", "Chien", "Chat",
         broadcastGameState();
     }
 
+    // Permet de partager le code de session via les apps installées sur le téléphone
+    // (WhatsApp, SMS, réseaux sociaux...) grâce à la Web Share API. Si le navigateur ne la
+    // supporte pas (essentiellement desktop), on copie simplement le message dans le presse-papier.
+    async function shareRoomCode() {
+        const text = `🎥 Rejoins ma partie de Rush'Up! Live avec le code : ${roomCode}`;
+        if (navigator.share) {
+            try {
+                await navigator.share({ title: "Rush'Up! Live", text });
+            } catch (err) {
+                // L'utilisateur a annulé le partage : rien à faire
+            }
+        } else if (navigator.clipboard) {
+            try {
+                await navigator.clipboard.writeText(text);
+                showGameToast('📋 Code copié dans le presse-papier !', 'joker');
+            } catch (err) {
+                // Pas bloquant
+            }
+        }
+    }
+
     function hostRestartToConfig() {
         if (!isHost()) return;
         gameState.phase = 'lobby';
         broadcastGameState();
+    }
+
+    // Permet à l'hôte de relancer une partie sur un autre thème à tout moment (pas seulement
+    // en fin de partie) : ça interrompt la partie en cours pour tout le monde, d'où la confirmation.
+    function confirmRestartToConfig() {
+        if (!isHost()) return;
+        if (!confirm("Relancer une nouvelle partie sur un autre thème ? La partie en cours sera arrêtée pour tout le monde.")) return;
+        hostRestartToConfig();
     }
 
     function sendGameMsg(to, type, data) {
@@ -2378,7 +2601,35 @@ gen_easy: ["Bouteille", "Soleil", "Voiture", "Maison", "Fleur", "Chien", "Chat",
             renderFinalSummary(payload.data);
         } else if (payload.type === 'action' && isHost()) {
             handlePlayerAction(payload.from, payload.data.action);
+        } else if (payload.type === 'reaction') {
+            showReaction(payload.data.emoji);
         }
+    }
+
+    // --- RÉACTIONS ---
+    // Petites animations flottantes visibles par tout le monde, envoyées à tout moment (lobby
+    // ou pleine partie). On limite la fréquence pour éviter le spam d'un tap répété.
+    let lastReactionSentAt = 0;
+
+    function sendReaction(emoji) {
+        const now = Date.now();
+        if (now - lastReactionSentAt < 350) return;
+        lastReactionSentAt = now;
+        showReaction(emoji); // le canal ne renvoie pas nos propres messages : on s'affiche localement tout de suite
+        if (channel) {
+            channel.send({ type: 'broadcast', event: 'game-msg', payload: { to: 'all', from: myId, type: 'reaction', data: { emoji } } });
+        }
+    }
+
+    function showReaction(emoji) {
+        const layer = document.getElementById('reactions-fly-layer');
+        if (!layer) return;
+        const el = document.createElement('div');
+        el.className = 'reaction-particle';
+        el.innerText = emoji;
+        el.style.left = `${10 + Math.random() * 80}%`;
+        layer.appendChild(el);
+        setTimeout(() => el.remove(), 2300);
     }
 
     function handlePlayerAction(fromId, action) {
@@ -2541,12 +2792,13 @@ gen_easy: ["Bouteille", "Soleil", "Voiture", "Maison", "Fleur", "Chien", "Chat",
     function applyGameState(state) {
         gameState = state;
 
-        // Webcams en bandeau compact uniquement pendant un tour vraiment actif (mot affiché) :
-        // le reste du temps (lobby, intro, confirmation de tour, fin de manche...) on garde
-        // l'affichage normal des caméras.
-        document.body.classList.toggle('video-compact', state.phase === 'playing' && !!state.turnReady);
+        // Les webcams gardent leur taille normale pendant les tours (demande explicite : le
+        // mode compact les rendait trop petites). L'espace vertical est plutôt récupéré en
+        // ayant les icônes micro/caméra directement sur sa propre vignette (cf addVideoTile)
+        // plutôt qu'une barre de contrôle séparée.
         updateVideoTileLabels();
         updateHeaderFooterPlacement(state.phase !== 'lobby');
+        document.getElementById('host-new-theme-btn').style.display = (state.phase !== 'lobby' && isHost()) ? 'inline-block' : 'none';
 
         ['game-waiting-view', 'round-intro-view', 'game-active-view', 'round-end-view', 'final-view'].forEach(id => {
             document.getElementById(id).style.display = 'none';
@@ -2593,7 +2845,9 @@ gen_easy: ["Bouteille", "Soleil", "Voiture", "Maison", "Fleur", "Chien", "Chat",
                     .join(', ') : '';
                 document.getElementById('turn-confirm-teammates').innerText = teammates ? `Joueurs de l'équipe ${activeTeamNum} : ${teammates}` : '';
                 document.getElementById('turn-confirm-ready-btn').style.display = isMyTurn ? 'block' : 'none';
-                document.getElementById('turn-confirm-wait-text').style.display = isMyTurn ? 'none' : 'block';
+                const waitText = document.getElementById('turn-confirm-wait-text');
+                waitText.style.display = isMyTurn ? 'none' : 'block';
+                waitText.innerText = `En attente que ${activeName} confirme...`;
                 if (gameTimerRAF) cancelAnimationFrame(gameTimerRAF);
                 currentStreak = 0;
                 clearTimeout(actionLockFailsafe);
@@ -2861,7 +3115,6 @@ gen_easy: ["Bouteille", "Soleil", "Voiture", "Maison", "Fleur", "Chien", "Chat",
         document.getElementById('round-end-view').style.display = 'none';
         document.getElementById('final-view').style.display = 'none';
         setSpotlightPlayer(null);
-        document.body.classList.remove('video-compact');
         updateHeaderFooterPlacement(false);
     }
 
