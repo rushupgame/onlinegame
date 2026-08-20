@@ -69,6 +69,26 @@
         --bg: #1f130a; --bg-alt: #3a2416; --card-border: rgba(255,255,255,0.12);
         --primary: #c9834a; --primary-hover: #e0a468; --text-main: #fbf0e6; --text-muted: #c2a68f;
     }
+    body.vibe-honeygold {
+        --bg: #2a1a00; --bg-alt: #4d3300; --card-border: rgba(255,255,255,0.12);
+        --primary: #ffb800; --primary-hover: #ffd54f; --text-main: #fff8e6; --text-muted: #e0c17a;
+    }
+    body.vibe-silverspark {
+        --bg: #12161c; --bg-alt: #232a33; --card-border: rgba(255,255,255,0.14);
+        --primary: #aebccb; --primary-hover: #e2e9f0; --text-main: #f4f7fa; --text-muted: #94a1ac;
+    }
+    body.vibe-melonsplash {
+        --bg: #062018; --bg-alt: #0d3d2c; --card-border: rgba(255,255,255,0.12);
+        --primary: #2fe6a6; --primary-hover: #6bffc4; --text-main: #eafff6; --text-muted: #8fd9bf;
+    }
+    body.vibe-wasabicrunch {
+        --bg: #050f05; --bg-alt: #102010; --card-border: rgba(255,255,255,0.12);
+        --primary: #3dff7a; --primary-hover: #85ffad; --text-main: #f0fff2; --text-muted: #9fd9ab;
+    }
+    body.vibe-passionpunch {
+        --bg: #1a0510; --bg-alt: #33071f; --card-border: rgba(255,255,255,0.12);
+        --primary: #e0175e; --primary-hover: #ff5c94; --text-main: #fff0f5; --text-muted: #d98aab;
+    }
 
     * { box-sizing: border-box; }
 
@@ -535,12 +555,14 @@
 
     .reactions-bar button:active { transform: scale(0.9); }
 
+    /* Ancré à #video-zone (et non plein écran) : les particules montent au-dessus de la
+       webcam, que #video-zone occupe 100% de la largeur (mobile) ou 50% (PC, colonne de
+       gauche) — comportement identique sur les deux, demande explicite. */
     #reactions-fly-layer {
-        position: fixed;
+        position: absolute;
         inset: 0;
         pointer-events: none;
         z-index: 39;
-        overflow: hidden;
     }
 
     .reaction-particle {
@@ -1270,10 +1292,36 @@
 
     /* --- Sélecteur de Vibes (skins) --- */
     .vibe-modal-card {
+        position: relative;
         max-width: 420px;
         max-height: 82vh;
         overflow-y: auto;
     }
+
+    /* Petite croix de fermeture en haut à droite, pour fermer l'encart Vibes sans avoir à
+       scroller jusqu'en bas jusqu'au bouton "Fermer". */
+    .vibe-modal-close {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 30px;
+        height: 30px;
+        border: none;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.08);
+        color: var(--text-main);
+        font-size: 1.1rem;
+        line-height: 1;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .vibe-modal-close:active { transform: scale(0.92); }
 
     .vibe-grid {
         display: grid;
@@ -1374,6 +1422,27 @@
         color: var(--primary-hover);
         box-shadow: 0 0 20px rgba(255, 71, 87, 0.5);
     }
+
+    /* Révélation de carte bonus (mode 1v1 / 1v1v1) affichée juste à la suite du mot, une fois
+       qu'il vient d'être trouvé — demande explicite : le Descripteur doit voir si le mot qu'il
+       vient de faire trouver était une carte bonus et pour qui. Élément dédié (pas le
+       #game-toast) pour ne jamais se faire écraser par le toast Joker/Combo qui peut se
+       déclencher au même instant sur le mot suivant. */
+    .last-bonus-note {
+        margin-top: 10px;
+        min-height: 1px;
+        font-weight: 800;
+        font-size: 0.9rem;
+        text-align: center;
+        opacity: 0;
+        transform: translateY(-4px);
+        transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+
+    .last-bonus-note.show { opacity: 1; transform: translateY(0); }
+
+    .last-bonus-note.bonus-self { color: var(--success); }
+    .last-bonus-note.bonus-other { color: var(--primary-hover); }
 
     /* --- MISE EN PAGE DESKTOP --- */
     /* Sur mobile, tout reste empilé en une colonne (comportement par défaut ci-dessus).
@@ -1517,13 +1586,10 @@
             <button type="button" onclick="sendReaction('😂')">😂</button>
             <button type="button" onclick="sendReaction('💩')">💩</button>
         </div>
+        <div id="reactions-fly-layer"></div>
     </div>
 
     <div class="participant-count" id="participant-count">1 participant</div>
-
-    <!-- Sur PC, si je suis l'hôte, le configurateur est déplacé ici (moitié gauche, sous les
-         webcams) plutôt que dans la colonne de jeu à droite — voir relocateConfigPanel(). -->
-    <div id="host-config-desktop-slot"></div>
     </div>
 
     <!-- ZONE DE JEU -->
@@ -1533,11 +1599,6 @@
             <h2>🎮 Partie</h2>
             <div id="non-host-waiting" class="waiting-text" style="display:none;">
                 En attente que l'hôte configure la partie (nombre de joueurs, équipes ou mode 1v1, thème...) et la lance...
-            </div>
-            <!-- Sur PC, quand le configurateur est déplacé dans la colonne de gauche (hôte),
-                 ce message le remplace ici pour ne pas laisser la colonne de droite vide. -->
-            <div id="host-config-right-placeholder" class="waiting-text" style="display:none;">
-                👈 Configure la partie sur la gauche, puis lance-la quand tout le monde est prêt.
             </div>
             <div id="host-config-view" style="display:none;">
                 <div class="config-columns">
@@ -1682,6 +1743,7 @@
                     <button class="pause-toggle-btn" id="pause-btn" onclick="togglePause()" style="display:none;" aria-label="Pause">⏸️</button>
                 </div>
                 <div class="word-card locked" id="word-card">En attente...</div>
+                <div class="last-bonus-note" id="last-bonus-note"></div>
                 <div class="game-action-btns" id="game-action-btns" style="display:none;">
                     <button class="btn btn-primary" id="pass-btn" onclick="sendPlayerAction('pass')">↩️ Passer</button>
                     <button class="btn btn-success" id="found-btn" onclick="sendPlayerAction('found')">✅ Trouvé !</button>
@@ -1732,8 +1794,6 @@
         </div>
         <div class="sameroom-hint-text">💡 Le larsen est coupé automatiquement entre les joueurs qui sont physiquement dans la même pièce (détection par ultrasons, aucune action à faire). Le 🔊 sur une webcam permet de forcer manuellement si besoin.</div>
     </footer>
-
-    <div id="reactions-fly-layer"></div>
 </div>
 
 <!-- Confirmation (fond flouté) avant de recommencer une nouvelle partie sur un autre thème -->
@@ -1762,6 +1822,7 @@
      avec les autres joueurs. -->
 <div id="vibe-modal" class="modal-overlay">
     <div class="modal-card vibe-modal-card">
+        <button type="button" class="vibe-modal-close" onclick="closeVibeModal()" aria-label="Fermer">✕</button>
         <p style="margin-bottom:10px;">🎨 Choisis ta Vibe</p>
         <div class="vibe-grid" id="vibe-grid"></div>
         <div class="modal-btn-row">
@@ -1809,7 +1870,12 @@
         { key: 'lime', emoji: '🍏', name: 'Lime Zest', desc: 'Vert citron hyper acide' },
         { key: 'mango', emoji: '🥭', name: 'Mango Tango', desc: 'Orange chaud et fruité' },
         { key: 'dragonfruit', emoji: '🐉', name: 'Dragonfruit Zap', desc: 'Pourpre/fuchsia électrique' },
-        { key: 'cocoa', emoji: '🍫', name: 'Cocoa Crunch', desc: 'Brun riche et gourmand' }
+        { key: 'cocoa', emoji: '🍫', name: 'Cocoa Crunch', desc: 'Brun riche et gourmand' },
+        { key: 'honeygold', emoji: '🍯', name: 'Honey Gold', desc: 'Or chaud, liquide et hyper lumineux' },
+        { key: 'silverspark', emoji: '✨', name: 'Silver Spark', desc: 'Argent chromé, vif et étincelant' },
+        { key: 'melonsplash', emoji: '🍈', name: 'Melon Splash', desc: 'Vert-corail frais et désaltérant' },
+        { key: 'wasabicrunch', emoji: '🌶️', name: 'Wasabi Crunch', desc: 'Vert néon piquant et décalé' },
+        { key: 'passionpunch', emoji: '🍹', name: 'Passion Punch', desc: 'Rouge-pourpre exotique et ultra vif' }
     ];
     const VIBE_STORAGE_KEY = 'rushup_vibe';
 
@@ -1849,7 +1915,12 @@
             lime: '#0a1f0a, #aef22c',
             mango: '#2a1400, #ff8c1a',
             dragonfruit: '#150826, #d925ff',
-            cocoa: '#1f130a, #c9834a'
+            cocoa: '#1f130a, #c9834a',
+            honeygold: '#2a1a00, #ffb800',
+            silverspark: '#12161c, #aebccb',
+            melonsplash: '#062018, #2fe6a6',
+            wasabicrunch: '#050f05, #3dff7a',
+            passionpunch: '#1a0510, #e0175e'
         };
         return gradients[key] || gradients.basic;
     }
@@ -3029,35 +3100,17 @@
         relocateConfigPanel();
     }
 
-    // Sur PC (≥900px), si je suis l'hôte, le configurateur (#host-config-view) est déplacé
-    // physiquement dans la colonne de gauche, sous les webcams, plutôt que dans la colonne de
-    // jeu à droite — un message de remplacement apparaît alors à droite. On déplace le même
-    // nœud DOM (pas de duplication ni de perte des valeurs saisies). Sur mobile, ou pour les
-    // non-hôtes, il reste à sa place d'origine.
+    // Demande explicite : sur PC, la moitié gauche est réservée EXCLUSIVEMENT aux webcams —
+    // le configurateur (#host-config-view) et le jeu restent toujours dans la colonne de
+    // droite (#game-waiting-view), qu'on soit hôte ou non, sur PC comme sur mobile. Cette
+    // fonction ne fait donc plus que garantir que le nœud est bien à sa place (utile si un
+    // appel précédent l'avait déplacé ailleurs) — elle ne bouge plus rien vers la gauche.
     function relocateConfigPanel() {
         const configView = document.getElementById('host-config-view');
-        const desktopSlot = document.getElementById('host-config-desktop-slot');
-        const rightPlaceholder = document.getElementById('host-config-right-placeholder');
         const gameWaitingView = document.getElementById('game-waiting-view');
-        if (!configView || !desktopSlot || !gameWaitingView) return;
-
-        const shouldBeOnLeft = isHost() && window.innerWidth >= 900 && gameState.phase === 'lobby';
-
-        if (shouldBeOnLeft) {
-            if (configView.parentElement !== desktopSlot) desktopSlot.appendChild(configView);
-            if (rightPlaceholder) rightPlaceholder.style.display = 'block';
-        } else {
-            if (configView.parentElement !== gameWaitingView) gameWaitingView.appendChild(configView);
-            if (rightPlaceholder) rightPlaceholder.style.display = 'none';
-        }
+        if (!configView || !gameWaitingView) return;
+        if (configView.parentElement !== gameWaitingView) gameWaitingView.appendChild(configView);
     }
-
-    // Débounce simple pour ne pas relocaliser à chaque pixel pendant un redimensionnement.
-    let relocateResizeTimer = null;
-    window.addEventListener('resize', () => {
-        clearTimeout(relocateResizeTimer);
-        relocateResizeTimer = setTimeout(relocateConfigPanel, 150);
-    });
 
     function populateThemeSelect() {
         const container = document.getElementById('theme-list-container');
@@ -3555,16 +3608,28 @@
         }
     }
 
-    // Pop-up de bonus caché (mode 1v1 / 1v1v1), envoyé à TOUS les joueurs (y compris
-    // l'observateur en 1v1v1) : vert et "toi" si on vient de gagner le bonus soi-même,
-    // rouge et le nom du joueur sinon.
+    // Révélation de bonus caché (mode 1v1 / 1v1v1), envoyée à TOUS les joueurs (y compris
+    // l'observateur en 1v1v1) dès qu'un mot bonus vient d'être trouvé : vert et "toi" si on
+    // vient de gagner le bonus soi-même, rouge et le nom du joueur sinon. Affichée juste à la
+    // suite du mot (le Descripteur voit ainsi, après avoir cliqué "Trouvé !", si ce mot était
+    // une carte bonus et pour qui) — élément dédié, pas le #game-toast partagé avec le
+    // Joker/Combo, pour ne jamais se faire écraser par eux.
     function showBonusNotify(data) {
         const isSelf = data.winnerId === myId;
         const roleLabel = data.bonusType === 'describer' ? 'Descripteur' : 'Devineur';
         const text = isSelf
             ? `🎁 Toi (${roleLabel}) : Carte Bonus ! +3 pts`
             : `🎁 ${data.winnerName} (${roleLabel}) a la Carte Bonus ! +3 pts`;
-        showGameToast(text, isSelf ? 'bonus-self' : 'bonus-other');
+        showLastBonusNote(text, isSelf ? 'bonus-self' : 'bonus-other');
+    }
+
+    function showLastBonusNote(text, variant) {
+        const note = document.getElementById('last-bonus-note');
+        if (!note) return;
+        note.innerText = text;
+        note.className = 'last-bonus-note show' + (variant ? ` ${variant}` : '');
+        clearTimeout(note._hideTimeout);
+        note._hideTimeout = setTimeout(() => note.classList.remove('show'), 4000);
     }
 
     // --- RÉACTIONS ---
@@ -3939,6 +4004,8 @@
                 currentStreak = 0;
                 clearTimeout(actionLockFailsafe);
                 lockActionButtons(false);
+                const lastBonusNote = document.getElementById('last-bonus-note');
+                if (lastBonusNote) lastBonusNote.classList.remove('show');
                 // Alerte le joueur que c'est à lui, une seule fois par prise de main (utile s'il ne
                 // regarde pas l'écran entre deux tours pendant qu'un coéquipier joue).
                 if (isMyTurn && lastAnnouncedTurnId !== state.activePlayerId) {
