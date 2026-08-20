@@ -1261,7 +1261,7 @@
         <div id="game-waiting-view">
             <h2>🎮 Partie</h2>
             <div id="non-host-waiting" class="waiting-text" style="display:none;">
-                En attente que l'hôte configure et lance la partie...
+                En attente que l'hôte configure la partie (nombre de joueurs, équipes ou mode 1v1, thème...) et la lance...
             </div>
             <div id="host-config-view" style="display:none;">
                 <div class="config-columns">
@@ -1368,6 +1368,9 @@
         <div id="round-intro-view" style="display:none;">
             <h2 id="round-intro-title">Manche 1</h2>
             <p class="waiting-text" id="round-intro-hint"></p>
+            <!-- Rappel des règles du mode 1v1 / 1v1v1, visible par tout le monde à chaque manche
+                 (les cartes bonus sont retirées au sort à chaque nouvelle manche). -->
+            <div id="round-intro-solo-rules" class="checkbox-hint" style="display:none; text-align:left; margin:14px 0;"></div>
             <div id="round-intro-host-btn-wrap" style="display:none;">
                 <button class="btn btn-primary" onclick="hostBeginRound()">🚀 Démarrer la manche</button>
             </div>
@@ -3409,6 +3412,21 @@ gen_easy: ["Bouteille", "Soleil", "Voiture", "Maison", "Fleur", "Chien", "Chat",
             const info = ROUND_INFO[state.round];
             document.getElementById('round-intro-title').innerText = info.title;
             document.getElementById('round-intro-hint').innerText = info.hint;
+            const soloRules = document.getElementById('round-intro-solo-rules');
+            if (state.mode === 'solo') {
+                const roleLine = state.soloRoster && state.soloRoster.length >= 3
+                    ? 'À chaque tour (chrono), un joueur décrit 🎤, un autre devine 👂 et le troisième observe 💤 — les rôles tournent à chaque chrono, tout le monde joue les trois rôles.'
+                    : 'À chaque tour (chrono), un joueur décrit 🎤 et l\'autre devine 👂 — les rôles s\'échangent à chaque chrono.';
+                soloRules.style.display = 'block';
+                soloRules.innerHTML = `
+                    <strong>🕹️ Rappel du mode ${state.soloRoster && state.soloRoster.length >= 3 ? '1v1v1' : '1v1'}</strong><br>
+                    ${roleLine}<br>
+                    Une carte trouvée (bouton « Trouver ») rapporte <strong>+1 point</strong> au Descripteur ET au Devineur.<br>
+                    5 cartes « Bonus Descripteur » et 5 « Bonus Devineur » ont été tirées en secret pour cette manche : si l'une d'elles est trouvée, elle rapporte <strong>+3 points de plus</strong> à celui qui en bénéficie — mais personne ne sait lesquelles avant de les trouver ou avant la révélation en fin de manche.
+                `;
+            } else {
+                soloRules.style.display = 'none';
+            }
             document.getElementById('round-intro-host-btn-wrap').style.display = isHost() ? 'block' : 'none';
             document.getElementById('round-intro-wait-text').style.display = isHost() ? 'none' : 'block';
             setSpotlightPlayer(getHostId());
